@@ -9,12 +9,13 @@ def Homes(weather, chan):
 
     runThread(Home(lock))
 
-def Home(lock):
-    global consomation
-    global production
-    energy_politic = 1  # ou 2 ou 3, dépend de s'il veut donner
-    consomation = v_initiale + calcul_magique_conso(temp)
-    production = v_initial + calcul_magique_prod(wind, sun)
-    with lock:
-        consomation += consomation_propre
-        production += production_propre
+def Home(lock, time, c_initial, p_initial):
+    while True:
+        global consomation
+        global production
+        energy_politic = 1  # ou 2 ou 3, dépend de s'il veut donner
+        consomation = time*(c_initial + temp*coef_temp)
+        production = time*(p_initial + wind*coef_wind + sun*coef_sun)
+        with lock:
+            consomation += consomation_propre
+            production += production_propre
