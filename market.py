@@ -1,59 +1,45 @@
 # all of this need to be global variable
-var energyNeeded
-var energySell
-var energyToShare
-var energyUndeterminate
-Lock energyMutex #to protect the variable upside this line
+from time import sleep
+from threading import Lock
+import signal
 
-var energyBought
-var external #value in $ of the influence of the external factor on the energy price
+Y = 0.1
+S = 0.1
+B = 0.1
 
-var PrixPrec
-var PrixActuel
+energy_bought = 0
+external = 0 #value in $ of the influence of the external factor on the energy price
 
-boolean external1
-boolean external2
-Lock externalMutex #to protect the variable upside this line
+prix_prec = 0
+prix_actuel = 0
+energy_mutex = Lock()
+
+external1 = False
+external2 = False
+external_mutex = Lock() #to protect the variable upside this line
+time = 60
+
 
 def calculatingPrice () :
-	while True :
-		sleep(Time) # we re-calculate the price each "x" milisecond where x is Time and it's an hard-coded constant
-		with  externalMutex:
-			if external1 :
-				external += cte
-				external1 = False
-			if external2 :
-				external += cte
-				external2 = False
+    while True :
+        sleep(time) # we re-calculate the price each "x" milisecond where x is Time and it's an hard-coded constant
+        with  external_mutex:
+            if external1 :
+                external += cte
+                external1 = False
+            if external2 :
+                external += cte
+                external2 = False
 
-		with energyMutex :
-			if energyToShare >= energieNeeded
-				energyNeeded = 0 #les maisons communistes du voisinage permettent l'autossufisance ! (c'est beau l'URSS...)
-				# le surplus est détruit lors de la remise a 0
-			else :
-				energyNeeded += -energyToShare
-				if energyUndeterminate >= energyNeeded :
-					energyUndeterminate += -energyNeeded
-					energyNeeded = 0 #les maisons socialiste/capitaliste du voisinage permettent l'autossufisance !
-					energySell += energyUndeterminate #maintenant qu'on a partager, on vend le surplus
-				else :
-					energyNeeded += -energyUndeterminate #la demande est importante, toute l'energie indéterminée est donnée
+        with energy_mutex:
+            PrixPrec = PrixActuel
+            PrixActuel = Y * PrixPrec + S * energySell + B * energyBought + external #where y s and b are hard-coded constant factor
 
+def gettingExternal (sig) :
+    if sig == signal.SIGUSR1:
+        with external_mutex :
+            external1 = True
 
-			energyBought = energyNeeded
-
-			PrixPrec = PrixActuel
-			PrixActuel = y*PrixPrec + s*energySell + b*energyBought + external #where y s and b are hard-coded constant factor
-
-			energyNeeded = energySell = energyToShare = energyUndeterminate = 0
-
-		energyBought = external = 0
-
-def gettingExternal () :
-	if sig == signal.SIGUSR1:
-		with externalMutex :
-			external1 = True
-
-	if sig == signal.SIGUSR2:
-		with externalMutex :
-			external2 = True
+    if sig == signal.SIGUSR2:
+        with external_mutex :
+            external2 = True
