@@ -1,6 +1,11 @@
 from multiprocessing import Process, Lock
 
 
+COEF_TEMP = 0.2
+COEF_SUN = 0.1
+COEF_WIND = 0.08
+
+
 def Homes(weather, chan):
     N = 10 # NOMBRE DE MAISONS
     lock = Lock()
@@ -23,13 +28,13 @@ def Homes(weather, chan):
         p.join()
 
 
-def Home(lock, time, c_initial, p_initial):
+def Home(lock, time=60, c_initial=200, p_initial=100):
     while True:
         global consomation
         global production
         energy_politic = 1  # ou 2 ou 3, dépend de s'il veut donner
-        consomation = time*(c_initial + temp*coef_temp)
-        production = time*(p_initial + wind*coef_wind + sun*coef_sun)
+        consomation = time*(c_initial + temp*COEF_TEMP)
+        production = time*(p_initial + wind*COEF_WIND + sun*COEF_SUN)
         with lock:
             consomation += consomation_propre
             production += production_propre
