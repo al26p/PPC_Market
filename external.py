@@ -3,6 +3,7 @@
 import random
 from time import sleep
 from multiprocessing import Process
+from os import kill
 import signal
 
 
@@ -30,10 +31,10 @@ class External(Process):
                     self.p1 = self.cr_proba1
                 else:
                     self.p1 = self.proba1
-                signal.signal(signal.SIGUSR1, self.marketPid)
+                os.kill(signal.SIGUSR1, self.marketPid)
             if j < self.p2:
                 if self.p2 == self.proba2:
                     self.p2 = self.cr_proba2
                 else:
                     self.p2 = self.proba2
-                signal.signal(signal.SIGUSR2, self.marketPid)
+                os.kill(signal.SIGUSR2, self.marketPid)
