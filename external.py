@@ -22,7 +22,7 @@ class External(Process):
         random.seed()
 
     def run(self):
-        while True :
+        while True:
             sleep(self.time)
             i = random.random()
             j = random.random()
@@ -31,10 +31,10 @@ class External(Process):
                     self.p1 = self.cr_proba1
                 else:
                     self.p1 = self.proba1
-                os.kill(signal.SIGUSR1, self.marketPid)
+                kill(signal.SIGUSR1, self.marketPid)
             if j < self.p2:
                 if self.p2 == self.proba2:
                     self.p2 = self.cr_proba2
                 else:
                     self.p2 = self.proba2
-                os.kill(signal.SIGUSR2, self.marketPid)
+                kill(signal.SIGUSR2, self.marketPid)
