@@ -20,8 +20,8 @@ external_mutex = Lock() #to protect the variable upside this line
 time = 60
 
 '''
-signal.signal(signal.SIGUSR1, handler_sig1)
-signal.signal(signal.SIGUSR1, handler_sig2)
+signal.signal(signal.SIGUSR1, handler)
+signal.signal(signal.SIGUSR2, handler)
 '''
 
 def calculatingPrice () :
@@ -41,12 +41,11 @@ def calculatingPrice () :
 
 
 
-def handler_sig1 (sig) :
+def handler(sig, frame) :
     if sig == signal.SIGUSR1:
         with external_mutex :
             external1 = True
 
-def handler_sig2 (sig) :
     if sig == signal.SIGUSR2:
         with external_mutex :
             external2 = True
