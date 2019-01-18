@@ -9,10 +9,13 @@ if __name__ == '__main__':
 
 
     print('Initialization of the weather')
-    a = Array('i', range(2))
-    w = Process(target=weather.weather, args=(a,))
+    a = Array('f', range(3))
+    w = weather.Weather(a, 1)
+    h = Process(target=homes.Homes, args=(a,))
 
-    print('Opening tunnel with market')
-    q = MessageQueue(1)
-    m = Process(target=market.calculatingPrice, args=(a, q))
-    h = Process(target=homes.Homes, args=(a, q))
+    w.start()
+    h.start()
+    print("gogogo")
+    w.join()
+    h.join()
+    print("end")

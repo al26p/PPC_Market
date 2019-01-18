@@ -30,7 +30,7 @@ def Homes(weather):
         c = random.randrange(0, 2000)
         p = random.randrange(0, 2000)
         home.append(Process(target=Home, args=(lock, energy, weather, c, p)))
-    home.append(Process(target=show, args=(5,energy)))
+    home.append(Process(target=show, args=(5, energy)))
     for p in home:
         p.start()
     print('Homes started')
@@ -41,7 +41,7 @@ def Homes(weather):
 def show(ttl, nrj):
     while True:
         print(nrj.value)
-        ptime.sleep('glogal', ttl)
+        ptime.sleep(ttl)
 
 # begin with capitalism
 def Home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=SELL):
@@ -50,7 +50,7 @@ def Home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=S
             ptime.sleep(2)
             energy_propre = - time*(c_initial + weather[0]*COEF_TEMP) #conso
             energy_propre += time*(p_initial + weather[2]*COEF_WIND + weather[1]*COEF_SUN) #prod
-            print('energy home', getpid(), energy_propre)
+            print('energy home', getpid(), energy_propre, 'meteo', weather[0])
             with lock:
                 energy.value += energy_propre
         except KeyboardInterrupt:

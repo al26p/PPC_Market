@@ -1,12 +1,11 @@
 from time import sleep
-from multiprocessing import Lock, Process
+from multiprocessing import Process
 import json
 
 
 class Weather(Process):
-    def __init__(self, mutex, array, refresh_interval=10.0, debug=False):
+    def __init__(self, array, refresh_interval=10.0, debug=False):
         super().__init__()
-        self.mutex = mutex
         self.array = array
         self.refresh_interval = refresh_interval
         self.debug = debug
@@ -23,6 +22,6 @@ class Weather(Process):
 
 
 if __name__ == "__main__":
-    p = Weather(Lock(), list(), 0.01, True)
+    p = Weather(list(), 0.01, True)
     p.start()
     p.join()
