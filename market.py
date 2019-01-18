@@ -19,12 +19,8 @@ external2 = False
 external_mutex = Lock() #to protect the variable upside this line
 time = 60
 
-'''
-signal.signal(signal.SIGUSR1, handler)
-signal.signal(signal.SIGUSR2, handler)
-'''
 
-def CalculatingPrice () :
+def calculatingPrice():
     global external1
     global external2
     global external

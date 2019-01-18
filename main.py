@@ -1,5 +1,5 @@
 from multiprocessing import Process, Array
-
+import market
 import weather
 import homes
 
@@ -14,5 +14,5 @@ if __name__ == '__main__':
 
     print('Opening tunnel with market')
     q = MessageQueue(1)
-    m = Process(target=market.Main, args=(a, q))
-    h = Process(target=homes.CalculatingPrice, args=(a, q))
+    m = Process(target=market.calculatingPrice, args=(a, q))
+    h = Process(target=homes.Homes, args=(a, q))
