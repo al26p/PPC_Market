@@ -1,16 +1,23 @@
-from time import sleep()
+from time import sleep
+from multiprocessing import Lock, Process
+import json
 
-
-def weather(mutex, array, refresh_interval=10):
-    f=open("meteoData.txt", 'r')
-    while True:
-        str = f.readline()
-        str = str.strip('\n')
-        str = str.split(' ')
-        with mutex :
-            array = str
-        print(array)
-        sleep(refresh_interval)
+class Weather (Process) :
+    def __init__ (self, mutex, array, refresh_interval=10):
+        super().__init__()
+        self.mutex = mutex
+        self.array = array
+        self.refresh_interval = refresh_interval
+    def run (self):
+        with open("meteoData.json", 'r') as input:
+            data = json.load(input)
+        while True :
+            for i in range(len(data["wind"])):
+                self.array = [data["temp"][i], data["sun"][i], data["wind"][i]]
+                print(self.array)
+                sleep(self.refresh_interval)
 
 if __name__ == "__main__" :
-    weather(list())
+    p = Weather(Lock(),list(),0.01)
+    p.start()
+    p.join()
