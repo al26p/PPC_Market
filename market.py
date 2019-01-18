@@ -3,15 +3,15 @@ from time import sleep
 from threading import Lock
 import signal
 
-Y = 0.1
-S = 0.1
-B = 0.1
+Y = 0.99
+S = 0.001
+B = 0.01
 
 energy_bought = 0
 external = 0 #value in $ of the influence of the external factor on the energy price
 
 prix_prec = 0
-prix_actuel = 0
+prix_actuel = 0.145
 energy_mutex = Lock()
 
 external1 = False
@@ -19,13 +19,18 @@ external2 = False
 external_mutex = Lock() #to protect the variable upside this line
 time = 60
 
+'''
+signal.signal(signal.SIGUSR1, handler)
+signal.signal(signal.SIGUSR2, handler)
+'''
 
-def calculatingPrice():
+def CalculatingPrice () :
     global external1
     global external2
     global external
     global PrixPrec
     global PrixActuel
+    global energy
     signal.signal(signal.SIGUSR1, handler)
     signal.signal(signal.SIGUSR2, handler)
     while True :
@@ -41,7 +46,7 @@ def calculatingPrice():
 
         with energy_mutex:
             PrixPrec = PrixActuel
-            PrixActuel = Y * PrixPrec + S * energySell + B * energyBought + external #where y s and b are hard-coded constant factor
+            PrixActuel = Y * PrixPrec + S * energySell + B * energy + external #where y s and b are hard-coded constant factor
             external = 0
         print('Market Price :', PrixActuel)
 

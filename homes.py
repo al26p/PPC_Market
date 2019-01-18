@@ -1,6 +1,6 @@
-from multiprocessing import Process, Lock, Queue
+from multiprocessing import Process, Lock, Queue, Value
 import queue
-import time
+import time as ptime
 from os import getpid
 
 
@@ -18,14 +18,12 @@ class DispoEnergy:
         self.source = source
         self.amount = amount
 
-
-def Homes(weather, chan):
+def Homes(weather):
     N = 10 # NOMBRE DE MAISONS
     lock = Lock()
     global wind
     global sun
     global temp
-    global energy
     energy = 0.0
     wind = weather[0]
     sun = weather[1]
@@ -33,18 +31,35 @@ def Homes(weather, chan):
 
     home = list()
     for i in range(N):
-        home.append(Process(target=Home, args=(lock)))
+        home.append(Process(target=Home, args=(lock,)))
     for p in home:
         p.start()
+    print('Homes started')
     for p in home:
         p.join()
+    print('See ya !')
 
 # begin with capitalism
 def Home(lock, time=60, politic=SELL,  c_initial=200, p_initial=100):
     while True:
-        global energy
-        energy_politic = 1  # ou 2 ou 3, dépend de s'il veut donner
-        energy_propre = - time*(c_initial + temp*COEF_TEMP) #conso
-        energy_propre += time*(p_initial + wind*COEF_WIND + sun*COEF_SUN) #prod
-        with lock:
-            energy += energy_propre
+        try:
+            ptime.sleep(2)
+            global energy
+            energy_politic = 1
+            energy_propre = - time*(c_initial + temp*COEF_TEMP) #conso
+            energy_propre += time*(p_initial + wind*COEF_WIND + sun*COEF_SUN) #prod
+            print('energy home', getpid(), energy_propre)
+            with lock:
+                energy += energy_propre
+                print('energy global', energy)
+        except KeyboardInterrupt:
+            break
+    print("end of home", getpid())
+
+
+if __name__=='__main__':
+    try:
+        Homes([1,2,10])
+    except KeyboardInterrupt:
+        print('exitting')
+        ptime.sleep(2)
