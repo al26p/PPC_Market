@@ -1,3 +1,4 @@
+import random
 from multiprocessing import Process, Lock, Queue, Value
 import queue
 import time as ptime
@@ -26,7 +27,10 @@ def Homes(weather):
     energy.value = 0
     home = list()
     for i in range(N):
-        home.append(Process(target=Home, args=(lock, energy, weather)))
+        c = random.randrange(0, 2000)
+        p = random.randrange(0, 2000)
+        home.append(Process(target=Home, args=(lock, energy, weather, c, p)))
+    home.append(Process(target=show, args=(5,energy)))
     for p in home:
         p.start()
     print('Homes started')
@@ -34,8 +38,13 @@ def Homes(weather):
         p.join()
     print('See ya !')
 
+def show(ttl, nrj):
+    while True:
+        print(nrj.value)
+        ptime.sleep('glogal', ttl)
+
 # begin with capitalism
-def Home(lock, energy, weather,time=60, politic=SELL,  c_initial=200, p_initial=100):
+def Home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=SELL):
     while True:
         try:
             ptime.sleep(2)
@@ -44,7 +53,6 @@ def Home(lock, energy, weather,time=60, politic=SELL,  c_initial=200, p_initial=
             print('energy home', getpid(), energy_propre)
             with lock:
                 energy.value += energy_propre
-                print('energy global', energy.value)
         except KeyboardInterrupt:
             break
     print("end of home", getpid())
