@@ -24,9 +24,17 @@ signal.signal(signal.SIGUSR1, handler)
 signal.signal(signal.SIGUSR2, handler)
 '''
 
-def calculatingPrice () :
+def CalculatingPrice () :
+    global external1
+    global external2
+    global external
+    global PrixPrec
+    global PrixActuel
+    signal.signal(signal.SIGUSR1, handler)
+    signal.signal(signal.SIGUSR2, handler)
     while True :
         sleep(time) # we re-calculate the price each "x" milisecond where x is Time and it's an hard-coded constant
+        # check if exceptionnal event
         with  external_mutex:
             if external1 :
                 external += cte
@@ -38,14 +46,21 @@ def calculatingPrice () :
         with energy_mutex:
             PrixPrec = PrixActuel
             PrixActuel = Y * PrixPrec + S * energySell + B * energyBought + external #where y s and b are hard-coded constant factor
+            external = 0
+        print('Market Price :', PrixActuel)
 
 
 
 def handler(sig, frame) :
+    global external1
+    global external2
+
     if sig == signal.SIGUSR1:
+        print('wow ! Exceptional crisis 1')
         with external_mutex :
             external1 = True
 
     if sig == signal.SIGUSR2:
+        print('wow ! Exceptional crisis 2')
         with external_mutex :
             external2 = True
