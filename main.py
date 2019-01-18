@@ -1,5 +1,5 @@
 from multiprocessing import Process, Array
-import market
+# import market
 import weather
 import homes
 
