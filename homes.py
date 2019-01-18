@@ -18,20 +18,15 @@ class DispoEnergy:
         self.source = source
         self.amount = amount
 
+
 def Homes(weather):
     N = 10 # NOMBRE DE MAISONS
     lock = Lock()
-    global wind
-    global sun
-    global temp
-    energy = 0.0
-    wind = weather[0]
-    sun = weather[1]
-    temp = weather[2]
-
+    energy = Value('f')
+    energy.value = 0
     home = list()
     for i in range(N):
-        home.append(Process(target=Home, args=(lock,)))
+        home.append(Process(target=Home, args=(lock, energy, weather)))
     for p in home:
         p.start()
     print('Homes started')
@@ -40,18 +35,16 @@ def Homes(weather):
     print('See ya !')
 
 # begin with capitalism
-def Home(lock, time=60, politic=SELL,  c_initial=200, p_initial=100):
+def Home(lock, energy, weather,time=60, politic=SELL,  c_initial=200, p_initial=100):
     while True:
         try:
             ptime.sleep(2)
-            global energy
-            energy_politic = 1
-            energy_propre = - time*(c_initial + temp*COEF_TEMP) #conso
-            energy_propre += time*(p_initial + wind*COEF_WIND + sun*COEF_SUN) #prod
+            energy_propre = - time*(c_initial + weather[0]*COEF_TEMP) #conso
+            energy_propre += time*(p_initial + weather[2]*COEF_WIND + weather[1]*COEF_SUN) #prod
             print('energy home', getpid(), energy_propre)
             with lock:
-                energy += energy_propre
-                print('energy global', energy)
+                energy.value += energy_propre
+                print('energy global', energy.value)
         except KeyboardInterrupt:
             break
     print("end of home", getpid())
@@ -59,7 +52,7 @@ def Home(lock, time=60, politic=SELL,  c_initial=200, p_initial=100):
 
 if __name__=='__main__':
     try:
-        Homes([1,2,10])
+        Homes([1, 2, 10])
     except KeyboardInterrupt:
         print('exitting')
         ptime.sleep(2)
