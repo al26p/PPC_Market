@@ -27,7 +27,8 @@ signal.signal(signal.SIGUSR2, handler)
 def CalculatingPrice () :
     global external1
     global external2
-    global external
+    global externalValue1
+    global externalValue2
     global PrixPrec
     global PrixActuel
     global energy
@@ -38,15 +39,18 @@ def CalculatingPrice () :
         # check if exceptionnal event
         with  external_mutex:
             if external1 :
-                external += cte
-                external1 = False
+                externalValue1 += cte
+            else :
+                externalValue1 = 0
+
             if external2 :
-                external += cte
-                external2 = False
+                externalValue2 += cte
+            else :
+                externalValue2 = 0
 
         with energy_mutex:
             PrixPrec = PrixActuel
-            PrixActuel = Y * PrixPrec + S * energySell + B * energy + external #where y s and b are hard-coded constant factor
+            PrixActuel = Y * PrixPrec + S * energySell + B * energy + externalValue1 + externalValue2 #where y s and b are hard-coded constant factor
             external = 0
         print('Market Price :', PrixActuel)
 
@@ -57,11 +61,21 @@ def handler(sig, frame) :
     global external2
 
     if sig == signal.SIGUSR1:
-        print('wow ! Exceptional crisis 1')
-        with external_mutex :
-            external1 = True
+        if (!external1):
+            print('wow ! Exceptional crisis 1')
+            with external_mutex :
+                external1 = True
+        else :
+            print('End of the Exceptional crisis 1')
+            with external_mutex :
+                external1 = False
 
     if sig == signal.SIGUSR2:
-        print('wow ! Exceptional crisis 2')
-        with external_mutex :
-            external2 = True
+        if (!external2):
+            print('wow ! Exceptional crisis 2')
+            with external_mutex :
+                external2 = True
+        else :
+            print('End of the Exceptional crisis 2')
+            with external_mutex :
+                external2 = False
