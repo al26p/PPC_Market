@@ -4,11 +4,12 @@ import json
 
 
 class Weather(Process):
-    def __init__(self, mutex, array, refresh_interval=10.0):
+    def __init__(self, mutex, array, refresh_interval=10.0, debug=False):
         super().__init__()
         self.mutex = mutex
         self.array = array
         self.refresh_interval = refresh_interval
+        self.debug = debug
 
     def run(self):
         with open("meteoData.json", 'r') as in_data:
@@ -16,11 +17,12 @@ class Weather(Process):
         while True:
             for i in range(len(data["wind"])):
                 self.array = [273.15 + data["temp"][i], data["sun"][i], data["wind"][i]]
-                print(self.array)
+                if self.debug:
+                    print(self.array)
                 sleep(self.refresh_interval)
 
 
 if __name__ == "__main__":
-    p = Weather(Lock(), list(), 0.01)
+    p = Weather(Lock(), list(), 0.01, True)
     p.start()
     p.join()
