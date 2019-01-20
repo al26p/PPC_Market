@@ -28,13 +28,14 @@ external2 = False
 external_mutex = threading.Lock() #to protect the variable upside this line
 
 class Market (Process):
-    def __init__(self, the_key, queue_semaphore, TIME=60):
+    def __init__(self, key, semaphore, TIME=60):
         super().__init__()
-        signal.signal(signal.SIGUSR1, handler)
-        signal.signal(signal.SIGUSR2, handler)
         global TIME = TIME
+        queue_semaphore = semaphore
         energy_queue = sysv_ipc.MessageQueue(key)
     def run(self):
+        signal.signal(signal.SIGUSR1, handler)
+        signal.signal(signal.SIGUSR2, handler)
         energy_thread = threading.Thread(target=gettingEnergy, args=(energy_queue, queue_semaphore,));
         price_thread = threading.Thread(target=CalculatingPrice)
 
