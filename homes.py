@@ -30,7 +30,7 @@ def homes(weather):
     for i in range(N):
         c = random.randrange(0, 2000)
         p = random.randrange(0, 2000)
-        pol = GIVE
+        pol = SELL
         hom.append(Process(target=home, args=(lock, energy, weather, c, p, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
@@ -85,9 +85,9 @@ def request(politic, nrj):
             r = DispoEnergy(0, timeout, getpid())
             while True:
                 try:
-                    rcv = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
+                    rcv = sysv_ipc.MessageQueue(3, sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
-                    rcv = sysv_ipc.MessageQueue(2)
+                    rcv = sysv_ipc.MessageQueue(3)
                 while True:
                     try:
                         (r, _) = rcv.receive([False, [getpid()]])
