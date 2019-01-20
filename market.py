@@ -1,11 +1,10 @@
-# all of this need to be global variable
 from time import sleep
 from threading import Lock
 import signal
 
-Y = 0.99
-S = 0.001
-B = 0.01
+Y = 0.99 #long term attenuation coef
+S = 0.001 #coef of the impact of the homes selling energy to the market
+B = 0.01 #coef of the impact of the market selling energy to the homes
 
 energy_bought = 0
 external = 0 #value in $ of the influence of the external factor on the energy price
@@ -19,19 +18,14 @@ external2 = False
 external_mutex = Lock() #to protect the variable upside this line
 time = 60
 
-'''
-signal.signal(signal.SIGUSR1, handler)
-signal.signal(signal.SIGUSR2, handler)
-'''
-
 def CalculatingPrice () :
     global external1
     global external2
-    global externalValue1
-    global externalValue2
-    global PrixPrec
-    global PrixActuel
-    global energy
+    global external_value1
+    global external_value2
+    global prix_prec
+    global prix_actuel
+    global energy_bought
     signal.signal(signal.SIGUSR1, handler)
     signal.signal(signal.SIGUSR2, handler)
     while True :
@@ -39,20 +33,20 @@ def CalculatingPrice () :
         # check if exceptionnal event
         with  external_mutex:
             if external1 :
-                externalValue1 += cte
+                external_value1 += cte
             else :
-                externalValue1 = 0
+                external_value1 = 0
 
             if external2 :
-                externalValue2 += cte
+                external_value2 += cte
             else :
-                externalValue2 = 0
+                external_value2 = 0
 
         with energy_mutex:
-            PrixPrec = PrixActuel
-            PrixActuel = Y * PrixPrec + S * energySell + B * energy + externalValue1 + externalValue2 #where y s and b are hard-coded constant factor
+            prix_prec = prix_actuel
+            prix_actuel = Y * prix_prec + S * energySell + B * energy_bought + external_value1 + external_value2 #where y s and b are hard-coded constant factor
             external = 0
-        print('Market Price :', PrixActuel)
+        print('Market Price :', prix_actuel)
 
 
 
@@ -63,12 +57,10 @@ def handler(sig, frame) :
     if sig == signal.SIGUSR1:
         if (!external1):
             print('wow ! Exceptional crisis 1')
-            with external_mutex :
-                external1 = True
+            external1 = True
         else :
             print('End of the Exceptional crisis 1')
-            with external_mutex :
-                external1 = False
+            external1 = False
 
     if sig == signal.SIGUSR2:
         if (!external2):
