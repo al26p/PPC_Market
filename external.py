@@ -8,10 +8,10 @@ import signal
 
 
 class External(Process):
-    PROBA1 = 0.1
-    PROBA2 = 0.05
-    CR_PROBA1 = 0.5
-    CR_PROBA1 = 0.3
+    PROBA1 = 0.04
+    PROBA2 = 0.01
+    CR_PROBA1 = 0.2
+    CR_PROBA2 = 0.1
 
     def __init__(self, time, marketPid):
         super().__init__()
@@ -31,10 +31,10 @@ class External(Process):
                     self.p1 = self.CR_PROBA1
                 else:
                     self.p1 = self.PROBA1
-                kill(signal.SIGUSR1, self.marketPid)
+                kill(self.marketPid, signal.SIGUSR1)
             if j < self.p2:
                 if self.p2 == self.PROBA2:
                     self.p2 = self.CR_PROBA2
                 else:
                     self.p2 = self.PROBA2
-                kill(signal.SIGUSR2, self.marketPid)
+                kill(self.marketPid, signal.SIGUSR2)

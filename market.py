@@ -51,11 +51,11 @@ class Market(multiprocessing.Process):
 
         energy_thread.start()
         price_thread.start()
-        #external_process.start()
+        external_process.start()
 
         energy_thread.join()
         price_thread.join()
-        #external_process.join()
+        external_process.join()
 
 
 def gettingEnergy(energy_queue, queue_semaphore):
