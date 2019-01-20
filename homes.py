@@ -13,7 +13,7 @@ COEF_WIND = 0.08
 SELL = 0
 GIVE = 1
 TRYGIVE = 2
-TIMEOUT = 100
+TIMEOUT = 1
 
 
 class DispoEnergy:
@@ -32,7 +32,8 @@ def homes(weather):
     for i in range(N):
         c = random.randrange(0, 2000)
         p = random.randrange(0, 2000)
-        hom.append(Process(target=home, args=(lock, energy, weather, c, p)))
+        pol = GIVE
+        hom.append(Process(target=home, args=(lock, energy, weather, c, p, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
         p.start()
@@ -78,7 +79,7 @@ def request(politic, nrj):
         if politic == 2:
             # Proposer NRJ dans queue 2, t fini mais bloquant, on attends une réponse dans la queue 3. si pas de réponse, sell
             try:
-                send = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+                send = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
             except sysv_ipc.ExistentialError:
                 send = sysv_ipc.MessageQueue(2)
             timeout = ptime.time() + TIMEOUT
@@ -86,12 +87,12 @@ def request(politic, nrj):
             r = DispoEnergy(0, timeout, getpid())
             while True:
                 try:
-                    rcv = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+                    rcv = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
                     rcv = sysv_ipc.MessageQueue(2)
                 while True:
                     try:
-                        (r, _) = rcv.receive(type=getpid(), block=False)
+                        (r, _) = rcv.receive([False, [getpid()]])
                         nrj = r.amount
                     except sysv_ipc.BusyError:
                         # ptime.sleep(0.01)
@@ -105,22 +106,22 @@ def request(politic, nrj):
                     send.send(r)
                 else:
                     break
-            to_market(nrj)
-        if politic ==0:
+            to_market(getpid(), nrj)
+        if politic == 0:
             # requeste au marché : queue 1
-            to_market(nrj)
+            to_market(getpid(), nrj)
 
     if nrj < 0: # buying
         nrj = abs(nrj)
         try:
-            rcv = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+            rcv = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
         except sysv_ipc.ExistentialError:
             rcv = sysv_ipc.MessageQueue(2)
         while True:
             try:
-                (r, _) = rcv.receive(block=False)
+                (r, _) = rcv.receive([False,])
                 try:
-                    send = sysv_ipc.MessageQueue(3, flag=sysv_ipc.IPC_CREAT)
+                    send = sysv_ipc.MessageQueue(3, sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
                     send = sysv_ipc.MessageQueue(3)
                 if nrj < r.amount:
@@ -129,17 +130,22 @@ def request(politic, nrj):
                 if nrj > r.amount:
                     nrj = nrj - r.amount
                     r.amount = 0
-                    send.send(r, type=r.sender)
+                    send.send(r, [True, [r.sender]])
             except sysv_ipc.BusyError:
+                print('no vendors')
                 break
-        to_market(- nrj)
+        to_market(getpid(), - nrj)
 
     return 0
 
 
-def to_market(nrj):
+def to_market(pid, nrj):
     #NRJ to send/request to the market
-    print("resquest to market", nrj)
+    if nrj < 0:
+        neg = 'buying'
+    else:
+        neg = 'selling'
+    print(pid, "resquest to market", nrj, neg)
 
 
 

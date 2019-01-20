@@ -9,7 +9,7 @@ S = -1000 #1 over the coef of the impact of the homes selling energy to the mark
 B = 1000 #1 over the coef of the impact of the market selling energy to the homes
 EXT_CTE1 = 0.5
 EXT_CTE2 = 1
-TIME
+TIME = 60
 
 #average price of kW/h in France in centimes of € is 14.69c
 prix_prec = 14.69
@@ -27,10 +27,11 @@ external1 = False
 external2 = False
 external_mutex = threading.Lock() #to protect the variable upside this line
 
-class Market (Process):
-    def __init__(self, key, semaphore, TIME=60):
+class Market (multiprocessing.Process):
+    def __init__(self, key, semaphore, time=60):
         super().__init__()
-        global TIME = TIME
+        global TIME
+        TIME = time
         queue_semaphore = semaphore
         energy_queue = sysv_ipc.MessageQueue(key)
     def run(self):
@@ -101,7 +102,7 @@ def handler(sig, frame) :
     global external2
 
     if sig == signal.SIGUSR1:
-        if (!external1):
+        if (not external1):
             print('wow ! Exceptional crisis 1')
             external1 = True
         else :
@@ -109,7 +110,7 @@ def handler(sig, frame) :
             external1 = False
 
     if sig == signal.SIGUSR2:
-        if (!external2):
+        if (not external2):
             print('wow ! Exceptional crisis 2')
             with external_mutex :
                 external2 = True
