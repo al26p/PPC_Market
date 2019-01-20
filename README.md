@@ -13,4 +13,4 @@ kW/h price in France : 0.1469€
 average consumption in kW/h in France : 4760 kW/h per Year
 
 ### Simulation info :
-Each tick of the market Clock represent 1 month.
+Each tick of the weather Clock represent 1 month.
