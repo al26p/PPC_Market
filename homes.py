@@ -11,7 +11,7 @@ COEF_WIND = 0.08
 SELL = 0
 GIVE = 1
 TRYGIVE = 2
-TIMEOUT = 1
+TIMEOUT = 10
 
 
 class DispoEnergy:
@@ -19,6 +19,16 @@ class DispoEnergy:
         self.amount = amount
         self.timeout = time_expire
         self.sender = sender
+
+    def serialize(self):
+        return (str(self.amount) + ',' + str(self.timeout) + ',' + str(self.sender)).encode('UTF-8')
+
+    def deserialize(self, serialized):
+        serialized = serialized.decode('UTF-8')
+        s = serialized.split(',')
+        self.amount = float(s[0])
+        self.timeout = float(s[1])
+        self.sender = int(s[2])
 
 
 def homes(weather):
@@ -30,8 +40,8 @@ def homes(weather):
     for i in range(N):
         c = random.randrange(0, 2000)
         p = random.randrange(0, 2000)
-        pol = SELL
-        hom.append(Process(target=home, args=(lock, energy, weather, c, p, pol)))
+        pol = GIVE
+        hom.append(Process(target=home, args=(lock, energy, weather, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
         p.start()
@@ -68,29 +78,32 @@ def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=S
 def request(politic, nrj):
     if nrj > 0:  # selling nrj
         if politic == 1:
+            print(getpid(), 'nrj, give')
             # Proposer NRJ dans queue 2, t fini mais pas bloquant, si t infini : on suppose qu'on stocke
             try:
-                send = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+                send = sysv_ipc.MessageQueue(2, flags=sysv_ipc.IPC_CREAT)
             except sysv_ipc.ExistentialError:
                 send = sysv_ipc.MessageQueue(2)
-            send.send(DispoEnergy(nrj, ptime.time() + TIMEOUT, getpid()))
+            send.send(DispoEnergy(nrj, ptime.time() + TIMEOUT, getpid()).serialize())
+            print('shares', nrj, 'for (s)', TIMEOUT)
         if politic == 2:
             # Proposer NRJ dans queue 2, t fini mais bloquant, on attends une réponse dans la queue 3. si pas de réponse, sell
             try:
-                send = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
+                send = sysv_ipc.MessageQueue(2, flags=sysv_ipc.IPC_CREAT)
             except sysv_ipc.ExistentialError:
                 send = sysv_ipc.MessageQueue(2)
             timeout = ptime.time() + TIMEOUT
-            send.send(DispoEnergy(nrj, timeout, getpid()))
+            send.send(DispoEnergy(nrj, timeout, getpid()).serialize())
             r = DispoEnergy(0, timeout, getpid())
             while True:
                 try:
-                    rcv = sysv_ipc.MessageQueue(3, sysv_ipc.IPC_CREAT)
+                    rcv = sysv_ipc.MessageQueue(3, flags=sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
                     rcv = sysv_ipc.MessageQueue(3)
                 while True:
                     try:
-                        (r, _) = rcv.receive([False, [getpid()]])
+                        (s, _) = rcv.receive(block=False, type=getpid())
+                        r.deserialize(s)
                         nrj = r.amount
                     except sysv_ipc.BusyError:
                         # ptime.sleep(0.01)
@@ -101,7 +114,7 @@ def request(politic, nrj):
                     break
                 if r.amount != 0:
                     nrj = r.amount
-                    send.send(r)
+                    send.send(r.serialize())
                 else:
                     break
             to_market(getpid(), nrj)
@@ -111,15 +124,19 @@ def request(politic, nrj):
 
     if nrj < 0:  # buying
         nrj = abs(nrj)
+        r = DispoEnergy(0,0,0)
         try:
-            rcv = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
+            rcv = sysv_ipc.MessageQueue(2, flags=sysv_ipc.IPC_CREAT)
         except sysv_ipc.ExistentialError:
             rcv = sysv_ipc.MessageQueue(2)
         while True:
+            print('searching')
             try:
-                (r, _) = rcv.receive([False, ])
+                (s, _) = rcv.receive(block=False)
+                print('found',s)
+                r.deserialize(s)
                 try:
-                    send = sysv_ipc.MessageQueue(3, sysv_ipc.IPC_CREAT)
+                    send = sysv_ipc.MessageQueue(3, flags=sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
                     send = sysv_ipc.MessageQueue(3)
                 if nrj < r.amount:
@@ -128,7 +145,7 @@ def request(politic, nrj):
                 if nrj > r.amount:
                     nrj = nrj - r.amount
                     r.amount = 0
-                    send.send(r, [True, [r.sender]])
+                    send.send(r.serialize(), block=True, type=r.sender)
             except sysv_ipc.BusyError:
                 print('no vendors')
                 break
@@ -138,6 +155,8 @@ def request(politic, nrj):
 
 
 def to_market(pid, nrj):
+    if nrj == 0:
+        return
     # NRJ to send/request to the market
     if nrj < 0:
         neg = 'buying'
