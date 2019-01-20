@@ -131,7 +131,8 @@ def request(politic, nrj):
             except sysv_ipc.BusyError:
                 break
         to_market(- nrj)
-        return 0
+
+    return 0
 
 
 def to_market(nrj):
