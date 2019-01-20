@@ -9,10 +9,12 @@ S = -1000 #1 over the coef of the impact of the homes selling energy to the mark
 B = 1000 #1 over the coef of the impact of the market selling energy to the homes
 EXT_CTE1 = 0.5
 EXT_CTE2 = 1
+TIME
 
 #average price of kW/h in France in centimes of € is 14.69c
 prix_prec = 14.69
 prix_actuel = 14.69
+
 
 # average energy consumption should be around 300 kW/h per house per month (per house per message)
 energy_sell = 0 #energy : home -> market
@@ -25,26 +27,24 @@ external1 = False
 external2 = False
 external_mutex = threading.Lock() #to protect the variable upside this line
 
-time
-
 class Market (Process):
-    def __init__(self, the_key, queue_semaphore, time=60):
+    def __init__(self, the_key, queue_semaphore, TIME=60):
         super().__init__()
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
-        global time = time
+        global TIME = TIME
         energy_queue = sysv_ipc.MessageQueue(key)
     def run(self):
         energy_thread = threading.Thread(target=gettingEnergy, args=(energy_queue, queue_semaphore,));
         price_thread = threading.Thread(target=CalculatingPrice)
 
-def gettingEnergy() :
+def gettingEnergy(energy_queue, queue_semaphore) :
     global energy_mutex
     global energy_bought
     global energy_sell
 
     while True :
-        value = mq.receive(type=1)
+        value = energy_queue.receive(type=1)
         queue_semaphore.release()
         value = float(value.decode())
         with energy_mutex :
@@ -57,6 +57,8 @@ def gettingEnergy() :
 def CalculatingPrice () :
     global EXT_CTE1
     global EXT_CTE2
+    global TIME
+
     global external1
     global external2
     global external_value1
@@ -65,12 +67,13 @@ def CalculatingPrice () :
 
     global prix_prec
     global prix_actuel
+
     global energy_bought
     global energy_sell
     global energy_mutex
 
     while True :
-        sleep(time) # we re-calculate the price each "x" milisecond where x is Time and it's an hard-coded constant
+        sleep(TIME) # we re-calculate the price each "x" milisecond where x is TIME
         # check if exceptionnal event
         with  external_mutex:
             if external1 :
@@ -85,8 +88,9 @@ def CalculatingPrice () :
 
         with energy_mutex:
             prix_prec = prix_actuel
-            prix_actuel = Y*prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2 #where y s and b are hard-coded constant factor
-            external = 0
+            prix_actuel = Y*prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2
+            energy_sell=0
+            energy_bought=0
         print('Market Price :', prix_actuel)
 
 
