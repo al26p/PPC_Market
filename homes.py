@@ -3,6 +3,8 @@ from multiprocessing import Process, Lock, Queue, Value
 import queue
 import time as ptime
 from os import getpid
+import sysv_ipc
+
 
 
 COEF_TEMP = 0.2
@@ -15,9 +17,10 @@ TIMEOUT = 100
 
 
 class DispoEnergy:
-    def __init__(self, source, amount):
-        self.source = source
+    def __init__(self,  amount, time_expire, sender):
         self.amount = amount
+        self.timeout = time_expire
+        self.sender = sender
 
 
 def homes(weather):
@@ -48,17 +51,93 @@ def show(ttl, nrj):
 
 # begin with capitalism
 def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=SELL):
+    energy_propre = 0
     while True:
         try:
-            ptime.sleep(2)
-            energy_propre = - time*(c_initial + 1/weather[0]*COEF_TEMP) #conso
+            ptime.sleep(time)
+            energy_propre += - time*(c_initial + 1/weather[0]*COEF_TEMP) #conso
             energy_propre += time*(p_initial + weather[2]*COEF_WIND + weather[1]*COEF_SUN) #prod
             print('energy home', getpid(), energy_propre, 'meteo', weather[0])
             with lock:
                 energy.value += energy_propre
+            energy_propre = request(politic, energy_propre)
         except KeyboardInterrupt:
             break
     print("end of home", getpid())
+
+
+def request(politic, nrj):
+    if nrj > 0: #selling nrj
+        if politic == 1:
+            # Proposer NRJ dans queue 2, t fini mais pas bloquant, si t infini : on suppose qu'on stocke
+            try:
+                send = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+            except sysv_ipc.ExistentialError:
+                send = sysv_ipc.MessageQueue(2)
+            send.send(DispoEnergy(nrj, ptime.time() + TIMEOUT, getpid()))
+        if politic == 2:
+            # Proposer NRJ dans queue 2, t fini mais bloquant, on attends une réponse dans la queue 3. si pas de réponse, sell
+            try:
+                send = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+            except sysv_ipc.ExistentialError:
+                send = sysv_ipc.MessageQueue(2)
+            timeout = ptime.time() + TIMEOUT
+            send.send(DispoEnergy(nrj, timeout, getpid()))
+            r = DispoEnergy(0, timeout, getpid())
+            while True:
+                try:
+                    rcv = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+                except sysv_ipc.ExistentialError:
+                    rcv = sysv_ipc.MessageQueue(2)
+                while True:
+                    try:
+                        (r, _) = rcv.receive(type=getpid(), block=False)
+                    except sysv_ipc.BusyError:
+                        pass
+                    if ptime.time() > timeout:
+                        break
+                if ptime.time() > timeout:
+                    break
+                if r.amount != 0:
+                    nrj = r.amount
+                    send.send(r)
+                else:
+                    break
+            to_market(nrj)
+        if politic ==0:
+            # requeste au marché : queue 1
+            to_market(nrj)
+
+    if nrj < 0: # buying
+        nrj = abs(nrj)
+        try:
+            rcv = sysv_ipc.MessageQueue(2, flag=sysv_ipc.IPC_CREAT)
+        except sysv_ipc.ExistentialError:
+            rcv = sysv_ipc.MessageQueue(2)
+        while True:
+            try:
+                (r, _) = rcv.receive(block=False)
+                try:
+                    send = sysv_ipc.MessageQueue(3, flag=sysv_ipc.IPC_CREAT)
+                except sysv_ipc.ExistentialError:
+                    send = sysv_ipc.MessageQueue(3)
+                if nrj < r.amount:
+                    r.amount = r.amount - nrj
+                    nrj = 0
+                if nrj > r.amount:
+                    nrj = nrj - r.amount
+                    r.amount = 0
+                    send.send(r, type=r.sender)
+            except sysv_ipc.BusyError:
+                break
+        to_market(- nrj)
+        return 0
+
+
+def to_market(nrj):
+    #NRJ to send/request to the market
+    print("AH", nrj)
+
 
 
 if __name__=='__main__':
