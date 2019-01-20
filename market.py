@@ -1,11 +1,13 @@
 from time import sleep
+from os import getpid
 import multiprocessing
 import threading
 import signal
 import sysv_ipc
+import external
 
 Y = 0.99  # long term attenuation coef
-S = -1000  # 1 over the coef of the impact of the homes selling energy to the market
+S = 1000  # 1 over the coef of the impact of the homes selling energy to the market
 B = 1000  # 1 over the coef of the impact of the market selling energy to the homes
 EXT_CTE1 = 0.5
 EXT_CTE2 = 1
@@ -28,37 +30,55 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 
 
 class Market(multiprocessing.Process):
-    def __init__(self, key, semaphore, time=60):
+    def __init__(self, key, semaphore, time=5):
         super().__init__()
         global TIME
         TIME = time
-        queue_semaphore = semaphore
-        energy_queue = sysv_ipc.MessageQueue(key)
+        self.queue_semaphore = semaphore
+        try:
+            self.energy_queue = sysv_ipc.MessageQueue(key, flags=sysv_ipc.IPC_CREAT)
+        except sysv_ipc.ExistentialError:
+            self.energy_queue = sysv_ipc.MessageQueue(key)
+
+
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
-        energy_thread = threading.Thread(target=gettingEnergy, args=(energy_queue, queue_semaphore,));
+        external_process = external.External(1, getpid())
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.energy_queue, self.queue_semaphore,));
         price_thread = threading.Thread(target=CalculatingPrice)
+
+        energy_thread.start()
+        price_thread.start()
+        #external_process.start()
+
+        energy_thread.join()
+        price_thread.join()
+        #external_process.join()
 
 
 def gettingEnergy(energy_queue, queue_semaphore):
+    print ('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
 
     while True:
-        value = energy_queue.receive(type=1)
+        (value,_) = energy_queue.receive(type=1)
         queue_semaphore.release()
+        print ('energy receive '+value.decode())
         value = float(value.decode())
         with energy_mutex:
+
             if 0 > value:
-                energy_bought += value
+                energy_bought += -value
             else:
-                energy_sell += value
+                energy_sell += -value
 
 
 def CalculatingPrice():
+    print('CalculatingPrice')
     global EXT_CTE1
     global EXT_CTE2
     global TIME
@@ -92,7 +112,7 @@ def CalculatingPrice():
 
         with energy_mutex:
             prix_prec = prix_actuel
-            prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
+            prix_actuel = Y * prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2
             energy_sell = 0
             energy_bought = 0
         print('Market Price :', prix_actuel)
@@ -119,3 +139,26 @@ def handler(sig, frame):
             print('End of the Exceptional crisis 2')
             with external_mutex:
                 external2 = False
+
+if __name__ == '__main__':
+    if __name__ == "__main__":
+        queue_semaphore=multiprocessing.Semaphore(8)
+        key = getpid()
+        p = Market(key, queue_semaphore)
+        p.start()
+        print ('l.134')
+        try:
+            energy_queue = sysv_ipc.MessageQueue(key, flags=sysv_ipc.IPC_CREAT)
+        except sysv_ipc.ExistentialError:
+            energy_queue = sysv_ipc.MessageQueue(key)
+        sleep(15)
+        queue_semaphore.acquire()
+        energy_queue.send("350".encode())
+        sleep(5)
+        queue_semaphore.acquire()
+        energy_queue.send("2500".encode())
+        sleep(5)
+        queue_semaphore.acquire()
+        energy_queue.send("-250".encode())
+        p.join()
+        print('l.136, end')
