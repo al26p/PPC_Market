@@ -5,8 +5,6 @@ import time as ptime
 from os import getpid
 import sysv_ipc
 
-
-
 COEF_TEMP = 0.2
 COEF_SUN = 0.1
 COEF_WIND = 0.08
@@ -17,14 +15,14 @@ TIMEOUT = 1
 
 
 class DispoEnergy:
-    def __init__(self,  amount, time_expire, sender):
+    def __init__(self, amount, time_expire, sender):
         self.amount = amount
         self.timeout = time_expire
         self.sender = sender
 
 
 def homes(weather):
-    N = 10 # NOMBRE DE MAISONS
+    N = 10  # NOMBRE DE MAISONS
     lock = Lock()
     energy = Value('f')
     energy.value = 0
@@ -56,8 +54,8 @@ def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=S
     while True:
         try:
             ptime.sleep(time)
-            energy_propre += - time*(c_initial + 1/weather[0]*COEF_TEMP) #conso
-            energy_propre += time*(p_initial + weather[2]*COEF_WIND + weather[1]*COEF_SUN) #prod
+            energy_propre += - time * (c_initial + 1 / weather[0] * COEF_TEMP)  # conso
+            energy_propre += time * (p_initial + weather[2] * COEF_WIND + weather[1] * COEF_SUN)  # prod
             print('energy home', getpid(), energy_propre, 'meteo', weather[0])
             with lock:
                 energy.value += energy_propre
@@ -68,7 +66,7 @@ def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=S
 
 
 def request(politic, nrj):
-    if nrj > 0: #selling nrj
+    if nrj > 0:  # selling nrj
         if politic == 1:
             # Proposer NRJ dans queue 2, t fini mais pas bloquant, si t infini : on suppose qu'on stocke
             try:
@@ -111,7 +109,7 @@ def request(politic, nrj):
             # requeste au marché : queue 1
             to_market(getpid(), nrj)
 
-    if nrj < 0: # buying
+    if nrj < 0:  # buying
         nrj = abs(nrj)
         try:
             rcv = sysv_ipc.MessageQueue(2, sysv_ipc.IPC_CREAT)
@@ -119,7 +117,7 @@ def request(politic, nrj):
             rcv = sysv_ipc.MessageQueue(2)
         while True:
             try:
-                (r, _) = rcv.receive([False,])
+                (r, _) = rcv.receive([False, ])
                 try:
                     send = sysv_ipc.MessageQueue(3, sysv_ipc.IPC_CREAT)
                 except sysv_ipc.ExistentialError:
@@ -140,7 +138,7 @@ def request(politic, nrj):
 
 
 def to_market(pid, nrj):
-    #NRJ to send/request to the market
+    # NRJ to send/request to the market
     if nrj < 0:
         neg = 'buying'
     else:
@@ -148,8 +146,7 @@ def to_market(pid, nrj):
     print(pid, "resquest to market", nrj, neg)
 
 
-
-if __name__=='__main__':
+if __name__ == '__main__':
     try:
         homes([1, 2, 10])
     except KeyboardInterrupt:
