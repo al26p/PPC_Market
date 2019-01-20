@@ -92,7 +92,9 @@ def request(politic, nrj):
                 while True:
                     try:
                         (r, _) = rcv.receive(type=getpid(), block=False)
+                        nrj = r.amount
                     except sysv_ipc.BusyError:
+                        # ptime.sleep(0.01)
                         pass
                     if ptime.time() > timeout:
                         break
@@ -137,7 +139,7 @@ def request(politic, nrj):
 
 def to_market(nrj):
     #NRJ to send/request to the market
-    print("AH", nrj)
+    print("resquest to market", nrj)
 
 
 
