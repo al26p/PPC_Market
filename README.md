@@ -5,8 +5,17 @@ Project for PPC 3TC - Modeling of an energetic market
 - @al26p
 - @AeredrenInsa
 
-### How to launch the simulatio
-The main.py script launch all the process of the simulation. Just type 'python3 main.py'
+### Setup
+install required requirements : 
+
+`pip3 install -r requirements.txt`
+
+(Tkinter is needed too. should be installed by default. Otherwise, google it ;) )
+
+### How to launch the simulation
+The main.py script launch all the process of the simulation. Just type 
+
+`python3 main.py`
 
 To stop, press enter ('STOP' should appears, multiples press can be mandatory)
 
