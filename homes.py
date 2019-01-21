@@ -1,5 +1,5 @@
 import random
-from multiprocessing import Process, Lock, Queue, Value
+from multiprocessing import Process, Lock, Queue, Value, Semaphore
 import queue
 import time as ptime
 from os import getpid
@@ -31,7 +31,7 @@ class DispoEnergy:
         self.sender = int(s[2])
 
 
-def homes(weather):
+def homes(weather, sem):
     N = 10  # NOMBRE DE MAISONS
     lock = Lock()
     energy = Value('f')
@@ -41,7 +41,7 @@ def homes(weather):
         c = random.randrange(100, 500)
         p = random.randrange(50, 450)
         pol = TRYGIVE
-        hom.append(Process(target=home, args=(lock, energy, weather, c, p, 2, pol)))
+        hom.append(Process(target=home, args=(lock, energy, weather, sem, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
         p.start()
@@ -61,7 +61,7 @@ def show(ttl, nrj):
 
 
 # begin with capitalism
-def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=SELL):
+def home(lock, energy, weather, sem, c_initial=200, p_initial=100, time=60, politic=SELL):
     energy_propre = 0
     while True:
         try:
@@ -71,13 +71,13 @@ def home(lock, energy, weather, c_initial=200, p_initial=100, time=60, politic=S
             print('energy home', getpid(), energy_propre, 'meteo', weather[0])
             with lock:
                 energy.value += energy_propre
-            energy_propre = request(politic, energy_propre)
+            energy_propre = request(politic, energy_propre, sem)
         except KeyboardInterrupt:
             break
     print("end of home", getpid())
 
 
-def request(politic, nrj):
+def request(politic, nrj, sem):
     if nrj > 0:  # selling nrj
         if politic == 1:
             print(getpid(), 'nrj, give')
@@ -119,10 +119,10 @@ def request(politic, nrj):
                     send.send(r.serialize())
                 else:
                     break
-            to_market(getpid(), nrj)
+            to_market(getpid(), nrj, sem)
         if politic == 0:
             # requeste au marché : queue 1
-            to_market(getpid(), nrj)
+            to_market(getpid(), nrj, sem)
 
     if nrj < 0:  # buying
         nrj = abs(nrj)
@@ -151,12 +151,13 @@ def request(politic, nrj):
             except sysv_ipc.BusyError:
                 print('no vendors')
                 break
-        to_market(getpid(), - nrj)
+        to_market(getpid(), - nrj, sem)
 
     return 0
 
 
-def to_market(pid, nrj):
+def to_market(pid, nrj, sem):
+    sem.acquire()
     if nrj == 0:
         return
     # NRJ to send/request to the market
@@ -165,6 +166,8 @@ def to_market(pid, nrj):
     else:
         neg = 'selling'
     print(pid, "resquest to market", nrj, neg)
+    mkt = sysv_ipc.MessageQueue(1)
+    mkt.send(str(nrj).encode)
 
 
 if __name__ == '__main__':
