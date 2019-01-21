@@ -4,20 +4,19 @@ import weather
 import homes
 import market
 import time
+import sysv_ipc
 
 if __name__ == '__main__':
     try:
         print("Hello")
 
-
+        maxRequests = 4
         print('Initialization of the weather')
-        queue_semaphore=Semaphore(4)
-
         a = Array('f', range(3))
         w = weather.Weather(a, 1)
-        q = Queue()
-        h = Process(target=homes.homes, args=(a,q,queue_semaphore,))
-        m = market.Market(q, queue_semaphore, 2)
+        q = Queue(maxRequests)
+        h = Process(target=homes.homes, args=(a, q))
+        m = market.Market(q, 2)
 
         m.start()
         w.start()

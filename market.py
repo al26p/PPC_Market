@@ -30,22 +30,21 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 
 fichier = 0
 
+
 class Market(multiprocessing.Process):
-    def __init__(self, queue, semaphore, time=5):
+    def __init__(self, queue, time=5):
         super().__init__()
         global TIME
         TIME = time
         self.queue = queue
-        self.queue_semaphore = semaphore
         global fichier
         fichier = open("marketOutput.txt", "w")
-
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
         external_process = external.External(1, getpid())
-        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue_semaphore,self.queue));
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue,))
         price_thread = threading.Thread(target=CalculatingPrice)
 
         energy_thread.start()
@@ -57,17 +56,16 @@ class Market(multiprocessing.Process):
         external_process.join()
 
 
-def gettingEnergy(queue_semaphore, queue):
-    print ('Geting energy')
+def gettingEnergy(queue):
+    print('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
     global fichier
     while True:
         value = queue.get()
-        queue_semaphore.release()
         # with fichier :
-        print('energy receive '+value+"\n")
+        print('energy receive ' + value + "\n")
         value = float(value)
         with energy_mutex:
 
@@ -111,11 +109,11 @@ def CalculatingPrice():
 
         with energy_mutex:
             prix_prec = prix_actuel
-            prix_actuel = Y * prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2
+            prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
             energy_sell = 0
             energy_bought = 0
-        #with fichier :
-        print('Market Price :', str(prix_actuel)+"\n")
+        # with fichier :
+        print('Market Price :', str(prix_actuel) + "\n")
         sleep(TIME)
 
 
@@ -146,23 +144,17 @@ def handler(sig, frame):
             with external_mutex:
                 external2 = False
 
+
 if __name__ == '__main__':
-    queue_semaphore=multiprocessing.Semaphore(8)
-    p = Market(queue_semaphore)
+    energy_queue = multiprocessing.Queue(8)
+    p = Market(energy_queue)
     p.start()
-    print ('l.134')
-    try:
-        energy_queue = sysv_ipc.MessageQueue(4, flags=sysv_ipc.IPC_CREAT)
-    except sysv_ipc.ExistentialError:
-        energy_queue = sysv_ipc.MessageQueue(4)
+    print('l.134')
     sleep(15)
-    queue_semaphore.acquire()
-    energy_queue.send("350".encode())
+    energy_queue.put("350")
     sleep(5)
-    queue_semaphore.acquire()
-    energy_queue.send("2500".encode())
+    energy_queue.put("2500")
     sleep(5)
-    queue_semaphore.acquire()
-    energy_queue.send("-250".encode())
+    energy_queue.put("-250")
     p.join()
     print('l.136, end')
