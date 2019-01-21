@@ -28,6 +28,7 @@ external1 = False
 external2 = False
 external_mutex = threading.Lock()  # to protect the variable upside this line
 
+fichier = 0
 
 class Market(multiprocessing.Process):
     def __init__(self, semaphore, time=5):
@@ -39,6 +40,7 @@ class Market(multiprocessing.Process):
             self.energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
         except sysv_ipc.ExistentialError:
             self.energy_queue = sysv_ipc.MessageQueue(1)
+        global fichier = open("marketOutput.txt", "w")
 
 
 
@@ -67,11 +69,13 @@ def gettingEnergy(energy_queue, queue_semaphore):
     global energy_mutex
     global energy_bought
     global energy_sell
+    global fichier
 
     while True:
         (value,_) = energy_queue.receive()
         queue_semaphore.release()
-        print ('energy receive '+value.decode())
+        with fichier :
+            fichier.write('energy receive '+value.decode()+"\n")
         value = float(value.decode())
         with energy_mutex:
 
@@ -100,6 +104,8 @@ def CalculatingPrice():
     global energy_sell
     global energy_mutex
 
+    global fichier
+
     while True:
         if external1:
             external_value1 += EXT_CTE1
@@ -116,29 +122,35 @@ def CalculatingPrice():
             prix_actuel = Y * prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2
             energy_sell = 0
             energy_bought = 0
-        print('Market Price :', prix_actuel)
+        with fichier :
+            fichier.write('Market Price :', prix_actuel+"\n")
         sleep(TIME)
 
 
 def handler(sig, frame):
     global external1
     global external2
+    global fichier
 
     if sig == signal.SIGUSR1:
         if (not external1):
-            print('wow ! Exceptional crisis 1')
+            with fichier:
+                fichier.write('wow ! Exceptional crisis 1')
             external1 = True
         else:
-            print('End of the Exceptional crisis 1')
+            with fichier:
+                fichier.write('End of the Exceptional crisis 1')
             external1 = False
 
     if sig == signal.SIGUSR2:
         if (not external2):
-            print('wow ! Exceptional crisis 2')
+            with fichier:
+                fichier.write('wow ! Exceptional crisis 2')
             with external_mutex:
                 external2 = True
         else:
-            print('End of the Exceptional crisis 2')
+            with fichier:
+                fichier.write('End of the Exceptional crisis 2')
             with external_mutex:
                 external2 = False
 
