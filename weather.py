@@ -14,13 +14,16 @@ class Weather(Process):
         with open("meteoData.json", 'r') as in_data:
             data = json.load(in_data)
         while True:
-            for i in range(len(data["wind"])):
-                self.array[0] = round(273.15 + data["temp"][i], 2)
-                self.array[1] = data["sun"][i]
-                self.array[2] = data["wind"][i]
-                if self.debug:
-                    print(self.array)
-                sleep(self.refresh_interval)
+            try:
+                for i in range(len(data["wind"])):
+                    self.array[0] = round(273.15 + data["temp"][i], 2)
+                    self.array[1] = data["sun"][i]
+                    self.array[2] = data["wind"][i]
+                    if self.debug:
+                        print(self.array)
+                    sleep(self.refresh_interval)
+            except KeyboardInterrupt:
+                break
 
 
 if __name__ == "__main__":
