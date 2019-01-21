@@ -101,15 +101,15 @@ def CalculatingPrice():
     global energy_mutex
 
     while True:
-            if external1:()
-                external_value1 += EXT_CTE1
-            else:
-                external_value1 = 0
+        if external1:
+            external_value1 += EXT_CTE1
+        else:
+            external_value1 = 0
 
-            if external2:
-                external_value2 += EXT_CTE2
-            else:
-                external_value2 = 0
+        if external2:
+            external_value2 += EXT_CTE2
+        else:
+            external_value2 = 0
 
         with energy_mutex:
             prix_prec = prix_actuel
