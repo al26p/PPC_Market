@@ -36,19 +36,14 @@ class Market(multiprocessing.Process):
         global TIME
         TIME = time
         self.queue_semaphore = semaphore
-        try:
-            self.energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
-        except sysv_ipc.ExistentialError:
-            self.energy_queue = sysv_ipc.MessageQueue(1)
         global fichier = open("marketOutput.txt", "w")
-
 
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
         external_process = external.External(1, getpid())
-        energy_thread = threading.Thread(target=gettingEnergy, args=(self.energy_queue, self.queue_semaphore,));
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue_semaphore,));
         price_thread = threading.Thread(target=CalculatingPrice)
 
         energy_thread.start()
@@ -64,18 +59,22 @@ class Market(multiprocessing.Process):
         print('queue cleaned')
 
 
-def gettingEnergy(energy_queue, queue_semaphore):
+def gettingEnergy(queue_semaphore):
     print ('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
     global fichier
+    energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
 
     while True:
         (value,_) = energy_queue.receive()
+        print('market got request')
         queue_semaphore.release()
         with fichier :
             fichier.write('energy receive '+value.decode()+"\n")
+        print('request filled')
+        print ('energy receive '+value.decode())
         value = float(value.decode())
         with energy_mutex:
 
@@ -155,23 +154,22 @@ def handler(sig, frame):
                 external2 = False
 
 if __name__ == '__main__':
-    if __name__ == "__main__":
-        queue_semaphore=multiprocessing.Semaphore(8)
-        p = Market(queue_semaphore)
-        p.start()
-        print ('l.134')
-        try:
-            energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
-        except sysv_ipc.ExistentialError:
-            energy_queue = sysv_ipc.MessageQueue(1)
-        sleep(15)
-        queue_semaphore.acquire()
-        energy_queue.send("350".encode())
-        sleep(5)
-        queue_semaphore.acquire()
-        energy_queue.send("2500".encode())
-        sleep(5)
-        queue_semaphore.acquire()
-        energy_queue.send("-250".encode())
-        p.join()
-        print('l.136, end')
+    queue_semaphore=multiprocessing.Semaphore(8)
+    p = Market(queue_semaphore)
+    p.start()
+    print ('l.134')
+    try:
+        energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
+    except sysv_ipc.ExistentialError:
+        energy_queue = sysv_ipc.MessageQueue(1)
+    sleep(15)
+    queue_semaphore.acquire()
+    energy_queue.send("350".encode())
+    sleep(5)
+    queue_semaphore.acquire()
+    energy_queue.send("2500".encode())
+    sleep(5)
+    queue_semaphore.acquire()
+    energy_queue.send("-250".encode())
+    p.join()
+    print('l.136, end')
