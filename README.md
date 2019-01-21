@@ -8,6 +8,8 @@ Project for PPC 3TC - Modeling of an energetic market
 ### How to launch the simulatio
 The main.py script launch all the process of the simulation. Just type 'python3 main.py'
 
+To stop, press enter ('STOP' should appears, multiples press can be mandatory)
+
 Parameter are hard coded, if you want to change the number of houses, their politics or the clock for the different process change them at the creation in the main.
 The probabilities for external event can be change in External.py
 
