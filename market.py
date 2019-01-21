@@ -65,12 +65,9 @@ def gettingEnergy(queue_semaphore, queue):
     global fichier
     while True:
         value = queue.get()
-        print('market got request')
         queue_semaphore.release()
         # with fichier :
         print('energy receive '+value+"\n")
-        print('request filled')
-        print ('energy receive '+value)
         value = float(value)
         with energy_mutex:
 
