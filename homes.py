@@ -1,5 +1,5 @@
 import random
-from multiprocessing import Process, Lock, Queue, Value, Semaphore
+from multiprocessing import Process, Queue, Semaphore
 import queue
 import time as ptime
 from os import getpid
@@ -33,15 +33,11 @@ class DispoEnergy:
 
 def homes(weather, queue, amount=10, pol=GIVE):
     N = amount  # NOMBRE DE MAISONS
-    lock = Lock()
-    energy = Value('f')
-    energy.value = 0
     hom = list()
     for i in range(N):
         c = random.randrange(100, 500)
-        p = random.randrange(50, 450)
-        hom.append(Process(target=home, args=(lock, energy, weather, queue, c, p, 2, pol)))
-    hom.append(Process(target=show, args=(5, energy)))
+        p = random.randrange(50, 300)
+        hom.append(Process(target=home, args=( weather, queue, c, p, 2, pol)))
     for p in hom:
         p.start()
     print('Homes started')
@@ -53,23 +49,15 @@ def homes(weather, queue, amount=10, pol=GIVE):
     print('See ya !')
 
 
-def show(ttl, nrj):
-    while True:
-        print('Global energy', nrj.value)
-        ptime.sleep(ttl)
-
-
 # begin with capitalism
-def home(lock, energy, weather, queue, c_initial=200, p_initial=100, time=60, politic=SELL):
+def home(weather, queue, c_initial=200, p_initial=100, time=60, politic=SELL):
     energy_propre = 0
     while True:
         try:
             ptime.sleep(time)
             energy_propre += - time * (c_initial + 1 / weather[0] * COEF_TEMP)  # conso
             energy_propre += time * (p_initial + weather[2] * COEF_WIND + weather[1] * COEF_SUN)  # prod
-            print('energy home', getpid(), energy_propre, 'meteo', weather[0])
-            with lock:
-                energy.value += energy_propre
+            print('\t\t energy home', getpid(), energy_propre, 'meteo', weather[0])
             energy_propre = request(politic, energy_propre, queue)
         except KeyboardInterrupt:
             break
@@ -85,7 +73,7 @@ def request(politic, nrj, queue):
             except sysv_ipc.ExistentialError:
                 send = sysv_ipc.MessageQueue(2)
             send.send(DispoEnergy(nrj, ptime.time() + TIMEOUT, getpid()).serialize())
-            print(getpid(), 'shares', nrj, 'for (s)', TIMEOUT)
+            print("\t\t", getpid(), 'shares', nrj, 'for (s)', TIMEOUT)
         if politic == 2:
             # Proposer NRJ dans queue 2, t fini mais bloquant, on attends une réponse dans la queue 3. si pas de réponse, sell
             try:
@@ -130,10 +118,10 @@ def request(politic, nrj, queue):
         except sysv_ipc.ExistentialError:
             rcv = sysv_ipc.MessageQueue(2)
         while True:
-            print(getpid(),'searching')
+            print("\t\t",getpid(),'searching')
             try:
                 (s, _) = rcv.receive(block=False)
-                print(getpid(), 'found', s.decode('UTF-8'))
+                print('\t\t', getpid(), 'found', s.decode('UTF-8'))
                 r.deserialize(s)
                 try:
                     send = sysv_ipc.MessageQueue(3, flags=sysv_ipc.IPC_CREAT)
@@ -147,7 +135,7 @@ def request(politic, nrj, queue):
                     r.amount = 0
                     send.send(r.serialize(), block=True, type=r.sender)
             except sysv_ipc.BusyError:
-                print(getpid(),'no vendors')
+                print('\t\t', getpid(),'no vendors')
                 break
         to_market(getpid(), - nrj, queue)
 
@@ -164,7 +152,7 @@ def to_market(pid, nrj, queue):
         neg = 'selling'
 
     nrj = str(round(nrj, 2))
-    print(pid, "resquest to market", nrj, neg)
+    print('\t\t', pid, "resquest to market", nrj, neg)
     queue.put(nrj)
 
 

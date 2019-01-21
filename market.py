@@ -64,7 +64,7 @@ def gettingEnergy(queue):
     while True:
         try:
             value = queue.get()
-            print('energy receive ' + value + "\n")
+            print('\t energy receive ' + value + "\n")
             value = float(value)
             with energy_mutex:
 
