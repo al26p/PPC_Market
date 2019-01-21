@@ -38,8 +38,8 @@ def homes(weather):
     energy.value = 0
     hom = list()
     for i in range(N):
-        c = random.randrange(0, 2000)
-        p = random.randrange(0, 2000)
+        c = random.randrange(100, 500)
+        p = random.randrange(50, 450)
         pol = TRYGIVE
         hom.append(Process(target=home, args=(lock, energy, weather, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
