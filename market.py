@@ -118,7 +118,6 @@ def CalculatingPrice():
         for i in range(len(pricehistory)-1):
             pricehistory[i] = pricehistory[i+1]
         pricehistory[9] = prix_actuel
-        plot(pricehistory)
         sleep(TIME)
 
 
