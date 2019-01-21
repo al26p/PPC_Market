@@ -117,6 +117,7 @@ def CalculatingPrice():
             energy_sell = 0
             energy_bought = 0
         print('Market Price :', prix_actuel)
+        sleep(TIME)
 
 
 def handler(sig, frame):
