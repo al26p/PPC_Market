@@ -38,8 +38,8 @@ def homes(weather):
     energy.value = 0
     hom = list()
     for i in range(N):
-        c = random.randrange(0, 2000)
-        p = random.randrange(0, 2000)
+        c = random.randrange(100, 500)
+        p = random.randrange(50, 450)
         pol = TRYGIVE
         hom.append(Process(target=home, args=(lock, energy, weather, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
@@ -49,6 +49,8 @@ def homes(weather):
     for p in hom:
         p.join()
     ptime.sleep(1)
+    sysv_ipc.MessageQueue(2).remove()
+    sysv_ipc.MessageQueue(3).remove()
     print('See ya !')
 
 
@@ -133,7 +135,7 @@ def request(politic, nrj):
             print('searching')
             try:
                 (s, _) = rcv.receive(block=False)
-                print('found',s)
+                print(getpid(),'found',s.decode('UTF-8'))
                 r.deserialize(s)
                 try:
                     send = sysv_ipc.MessageQueue(3, flags=sysv_ipc.IPC_CREAT)

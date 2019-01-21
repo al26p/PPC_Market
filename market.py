@@ -30,15 +30,15 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 
 
 class Market(multiprocessing.Process):
-    def __init__(self, key, semaphore, time=5):
+    def __init__(self, semaphore, time=5):
         super().__init__()
         global TIME
         TIME = time
         self.queue_semaphore = semaphore
         try:
-            self.energy_queue = sysv_ipc.MessageQueue(key, flags=sysv_ipc.IPC_CREAT)
+            self.energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
         except sysv_ipc.ExistentialError:
-            self.energy_queue = sysv_ipc.MessageQueue(key)
+            self.energy_queue = sysv_ipc.MessageQueue(1)
 
 
 
@@ -56,6 +56,10 @@ class Market(multiprocessing.Process):
         energy_thread.join()
         price_thread.join()
         external_process.join()
+
+    def __del__(self):
+        self.energy_queue.remove()
+        print('queue cleaned')
 
 
 def gettingEnergy(energy_queue, queue_semaphore):
@@ -97,10 +101,7 @@ def CalculatingPrice():
     global energy_mutex
 
     while True:
-        sleep(TIME)  # we re-calculate the price each "x" milisecond where x is TIME
-        # check if exceptionnal event
-        with  external_mutex:
-            if external1:
+            if external1:()
                 external_value1 += EXT_CTE1
             else:
                 external_value1 = 0
@@ -143,14 +144,13 @@ def handler(sig, frame):
 if __name__ == '__main__':
     if __name__ == "__main__":
         queue_semaphore=multiprocessing.Semaphore(8)
-        key = getpid()
-        p = Market(key, queue_semaphore)
+        p = Market(queue_semaphore)
         p.start()
         print ('l.134')
         try:
-            energy_queue = sysv_ipc.MessageQueue(key, flags=sysv_ipc.IPC_CREAT)
+            energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
         except sysv_ipc.ExistentialError:
-            energy_queue = sysv_ipc.MessageQueue(key)
+            energy_queue = sysv_ipc.MessageQueue(1)
         sleep(15)
         queue_semaphore.acquire()
         energy_queue.send("350".encode())
