@@ -23,18 +23,21 @@ class External(Process):
 
     def run(self):
         while True:
-            sleep(self.time)
-            i = random.random()
-            j = random.random()
-            if i < self.p1:
-                if self.p1 == self.PROBA1:
-                    self.p1 = self.CR_PROBA1
-                else:
-                    self.p1 = self.PROBA1
-                kill(self.marketPid, signal.SIGUSR1)
-            if j < self.p2:
-                if self.p2 == self.PROBA2:
-                    self.p2 = self.CR_PROBA2
-                else:
-                    self.p2 = self.PROBA2
-                kill(self.marketPid, signal.SIGUSR2)
+            try:
+                sleep(self.time)
+                i = random.random()
+                j = random.random()
+                if i < self.p1:
+                    if self.p1 == self.PROBA1:
+                        self.p1 = self.CR_PROBA1
+                    else:
+                        self.p1 = self.PROBA1
+                    kill(self.marketPid, signal.SIGUSR1)
+                if j < self.p2:
+                    if self.p2 == self.PROBA2:
+                        self.p2 = self.CR_PROBA2
+                    else:
+                        self.p2 = self.PROBA2
+                    kill(self.marketPid, signal.SIGUSR2)
+            except KeyboardInterrupt:
+                break

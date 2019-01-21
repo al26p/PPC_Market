@@ -28,7 +28,6 @@ external1 = False
 external2 = False
 external_mutex = threading.Lock()  # to protect the variable upside this line
 
-fichier = 0
 
 
 class Market(multiprocessing.Process):
@@ -37,8 +36,6 @@ class Market(multiprocessing.Process):
         global TIME
         TIME = time
         self.queue = queue
-        global fichier
-        fichier = open("marketOutput.txt", "w")
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
@@ -50,11 +47,13 @@ class Market(multiprocessing.Process):
         energy_thread.start()
         price_thread.start()
         external_process.start()
-
-        energy_thread.join()
-        price_thread.join()
-        external_process.join()
-
+        try:
+            energy_thread.join()
+        except KeyboardInterrupt:
+            time.sleep(2)
+            energy_thread.join()
+            price_thread.join()
+            external_process.join()
 
 def gettingEnergy(queue):
     print('Geting energy')
@@ -63,16 +62,18 @@ def gettingEnergy(queue):
     global energy_sell
     global fichier
     while True:
-        value = queue.get()
-        # with fichier :
-        print('energy receive ' + value + "\n")
-        value = float(value)
-        with energy_mutex:
+        try:
+            value = queue.get()
+            print('energy receive ' + value + "\n")
+            value = float(value)
+            with energy_mutex:
 
-            if 0 > value:
-                energy_bought += -value
-            else:
-                energy_sell += -value
+                if 0 > value:
+                    energy_bought += -value
+                else:
+                    energy_sell += -value
+        except KeyboardInterrupt:
+            break
 
 
 def CalculatingPrice():
@@ -95,29 +96,31 @@ def CalculatingPrice():
     global energy_mutex
 
     global fichier
-    with open('prices.txt', 'w') as wfile:
-        wfile.write('simulation'+'\n')
+    with open('prices.json', 'w') as wfile:
+        wfile.write('{\"prices\":[')
     while True:
-        if external1:
-            external_value1 += EXT_CTE1
-        else:
-            external_value1 = 0
+        try:
+            if external1:
+                external_value1 += EXT_CTE1
+            else:
+                external_value1 = 0
 
-        if external2:
-            external_value2 += EXT_CTE2
-        else:
-            external_value2 = 0
+            if external2:
+                external_value2 += EXT_CTE2
+            else:
+                external_value2 = 0
 
-        with energy_mutex:
-            prix_prec = prix_actuel
-            prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
-            energy_sell = 0
-            energy_bought = 0
-        # with fichier :
-        print('Market Price :', str(prix_actuel) + "\n")
-        with open('prices.txt', 'a') as wfile:
-            wfile.write(str(prix_actuel)+'\n')
-        sleep(TIME)
+            with energy_mutex:
+                prix_prec = prix_actuel
+                prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
+                energy_sell = 0
+                energy_bought = 0
+            print('Market Price :', str(prix_actuel) + "\n")
+            with open('prices.json', 'a') as wfile:
+                wfile.write(str(prix_actuel)+',')
+            sleep(TIME)
+        except KeyboardInterrupt:
+            break
 
 
 def handler(sig, frame):
@@ -127,22 +130,18 @@ def handler(sig, frame):
 
     if sig == signal.SIGUSR1:
         if (not external1):
-            # with fichier:
             print('wow ! Exceptional crisis 1')
             external1 = True
         else:
-            # with fichier:
             print('End of the Exceptional crisis 1')
             external1 = False
 
     if sig == signal.SIGUSR2:
         if (not external2):
-            # with fichier:
             print('wow ! Exceptional crisis 2')
             with external_mutex:
                 external2 = True
         else:
-            # with fichier:
             print('End of the Exceptional crisis 2')
             with external_mutex:
                 external2 = False

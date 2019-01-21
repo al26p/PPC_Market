@@ -5,6 +5,25 @@ import homes
 import market
 import time
 import sysv_ipc
+import json
+import matplotlib.pyplot as plt
+
+SELL = 0
+GIVE = 1
+TRYGIVE = 2
+
+
+def graph():
+    with open('prices.json', 'a') as w:
+        w.write("0]}")
+    with open('prices.json', 'r') as r:
+        a = json.load(r)
+        a = a['prices']
+        a.pop()
+        plt.plot(a)
+        plt.show()
+    print("end")
+
 
 if __name__ == '__main__':
     try:
@@ -15,7 +34,9 @@ if __name__ == '__main__':
         a = Array('f', range(3))
         w = weather.Weather(a, 1)
         q = Queue(maxRequests)
-        h = Process(target=homes.homes, args=(a, q))
+        n = 10
+        pol = GIVE
+        h = Process(target=homes.homes, args=(a, q, n, pol))
         m = market.Market(q, 2)
 
         m.start()
@@ -26,8 +47,13 @@ if __name__ == '__main__':
         h.join()
         m.join()
     except KeyboardInterrupt:
-        time.sleep(5)
-        sysv_ipc.remove_message_queue(2)
-        sysv_ipc.remove_message_queue(3)
-
-    print("end")
+        time.sleep(1)
+        try:
+            sysv_ipc.remove_message_queue(2)
+        except sysv_ipc.ExistentialError:
+            pass
+        try:
+            sysv_ipc.remove_message_queue(3)
+        except sysv_ipc.ExistentialError:
+            pass
+        graph()

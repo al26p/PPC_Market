@@ -5,13 +5,13 @@ import time as ptime
 from os import getpid
 import sysv_ipc
 
-COEF_TEMP = 0.2
-COEF_SUN = 0.1
-COEF_WIND = 0.08
+COEF_TEMP = 20
+COEF_SUN = 1
+COEF_WIND = 10
 SELL = 0
 GIVE = 1
 TRYGIVE = 2
-TIMEOUT = 10
+TIMEOUT = 2
 
 
 class DispoEnergy:
@@ -31,8 +31,8 @@ class DispoEnergy:
         self.sender = int(s[2])
 
 
-def homes(weather, queue):
-    N = 10  # NOMBRE DE MAISONS
+def homes(weather, queue, amount=10, pol=GIVE):
+    N = amount  # NOMBRE DE MAISONS
     lock = Lock()
     energy = Value('f')
     energy.value = 0
@@ -40,7 +40,6 @@ def homes(weather, queue):
     for i in range(N):
         c = random.randrange(100, 500)
         p = random.randrange(50, 450)
-        pol = GIVE
         hom.append(Process(target=home, args=(lock, energy, weather, queue, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
@@ -131,7 +130,7 @@ def request(politic, nrj, queue):
         except sysv_ipc.ExistentialError:
             rcv = sysv_ipc.MessageQueue(2)
         while True:
-            print('searching')
+            print(getpid(),'searching')
             try:
                 (s, _) = rcv.receive(block=False)
                 print(getpid(), 'found', s.decode('UTF-8'))
@@ -148,7 +147,7 @@ def request(politic, nrj, queue):
                     r.amount = 0
                     send.send(r.serialize(), block=True, type=r.sender)
             except sysv_ipc.BusyError:
-                print('no vendors')
+                print(getpid(),'no vendors')
                 break
         to_market(getpid(), - nrj, queue)
 
