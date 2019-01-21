@@ -5,7 +5,6 @@ import threading
 import signal
 import sysv_ipc
 import external
-import matplotlib.pyplot as plt
 
 Y = 0.99  # long term attenuation coef
 S = 1000  # 1 over the coef of the impact of the homes selling energy to the market
@@ -121,11 +120,6 @@ def CalculatingPrice():
         with open('prices.txt', 'w') as wfile:
             wfile.write(str(prix_actuel)+'\n')
         sleep(TIME)
-
-
-def plot(prices):
-    plt.plot(prices)
-    plt.show()
 
 
 def handler(sig, frame):
