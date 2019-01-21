@@ -51,7 +51,7 @@ class Market(multiprocessing.Process):
 
         price_thread.join()
         external_process.join()
-        queu.put(0)
+        self.queue.put(0)
         energy_thread.join()
         print('end of market')
 
