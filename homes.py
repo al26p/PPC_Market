@@ -35,7 +35,7 @@ def homes(weather, queue, amount=10, pol=GIVE):
     N = amount  # NOMBRE DE MAISONS
     hom = list()
     for i in range(N):
-        c = random.randrange(100, 500)
+        c = random.randrange(100, 520)
         p = random.randrange(50, 300)
         if pol == 4:
             pols = random.randrange(0,3,1)
