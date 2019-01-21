@@ -31,52 +31,47 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 
 
 class Market(multiprocessing.Process):
-    def __init__(self, queue, time=5):
+    def __init__(self, queue, time=5, running):
         super().__init__()
         global TIME
         TIME = time
         self.queue = queue
+        self.running = running
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
         external_process = external.External(1, getpid())
-        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue,))
-        price_thread = threading.Thread(target=CalculatingPrice)
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue,self.running,))
+        price_thread = threading.Thread(target=CalculatingPrice, args=(self.running,))
 
         energy_thread.start()
         price_thread.start()
         external_process.start()
-        try:
-            energy_thread.join()
-        except KeyboardInterrupt:
-            time.sleep(2)
-            energy_thread.join()
-            price_thread.join()
-            external_process.join()
 
-def gettingEnergy(queue):
+        energy_thread.join()
+        price_thread.join()
+        external_process.join()
+
+def gettingEnergy(queue, running):
     print('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
     global fichier
-    while True:
-        try:
-            value = queue.get()
-            print('\t energy receive ' + value + "\n")
-            value = float(value)
-            with energy_mutex:
+    while running:
+        value = queue.get()
+        print('\t energy receive ' + value + "\n")
+        value = float(value)
+        with energy_mutex:
 
-                if 0 > value:
-                    energy_bought += -value
-                else:
-                    energy_sell += -value
-        except KeyboardInterrupt:
-            break
+            if 0 > value:
+                energy_bought += -value
+            else:
+                energy_sell += -value
 
 
-def CalculatingPrice():
+def CalculatingPrice(running):
     print('CalculatingPrice')
     global EXT_CTE1
     global EXT_CTE2
@@ -98,31 +93,28 @@ def CalculatingPrice():
     global fichier
     with open('prices.json', 'w') as wfile:
         wfile.write('{\"prices\":[')
-    while True:
-        try:
-            if external1:
-                external_value1 += EXT_CTE1
-            else:
-                external_value1 = 0
+    while running:
+        if external1:
+            external_value1 += EXT_CTE1
+        else:
+            external_value1 = 0
 
-            if external2:
-                external_value2 += EXT_CTE2
-            else:
-                external_value2 = 0
+        if external2:
+            external_value2 += EXT_CTE2
+        else:
+            external_value2 = 0
 
-            with energy_mutex:
-                prix_prec = prix_actuel
-                prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
-                energy_sell = 0
-                energy_bought = 0
-                if prix_actuel < 0:
-                    prix_actuel = 0
-            print('Market Price :', str(prix_actuel) + "\n")
-            with open('prices.json', 'a') as wfile:
-                wfile.write(str(prix_actuel)+',')
-            sleep(TIME)
-        except KeyboardInterrupt:
-            break
+        with energy_mutex:
+            prix_prec = prix_actuel
+            prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
+            energy_sell = 0
+            energy_bought = 0
+            if prix_actuel < 0:
+                prix_actuel = 0
+        print('Market Price :', str(prix_actuel) + "\n")
+        with open('prices.json', 'a') as wfile:
+            wfile.write(str(prix_actuel)+',')
+        sleep(TIME)
 
 
 def handler(sig, frame):

@@ -39,7 +39,7 @@ if __name__ == '__main__':
         pol = CVOUKIVOI
         running = Value('i', 1)
         h = Process(target=homes.homes, args=(a, q, running, n, pol))
-        m = market.Market(q, 2)
+        m = market.Market(q, 2, running)
 
         m.start()
         w.start()
