@@ -69,7 +69,7 @@ def gettingEnergy(energy_queue, queue_semaphore):
     global energy_sell
 
     while True:
-        (value,_) = energy_queue.receive(type=1)
+        (value,_) = energy_queue.receive()
         queue_semaphore.release()
         print ('energy receive '+value.decode())
         value = float(value.decode())
