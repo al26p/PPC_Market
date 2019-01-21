@@ -31,19 +31,21 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 fichier = 0
 
 class Market(multiprocessing.Process):
-    def __init__(self, semaphore, time=5):
+    def __init__(self, queue, semaphore, time=5):
         super().__init__()
         global TIME
         TIME = time
+        self.queue = queue
         self.queue_semaphore = semaphore
-        global fichier = open("marketOutput.txt", "w")
+        global fichier
+        fichier = open("marketOutput.txt", "w")
 
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
         external_process = external.External(1, getpid())
-        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue_semaphore,));
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue_semaphore,self.queue));
         price_thread = threading.Thread(target=CalculatingPrice)
 
         energy_thread.start()
@@ -54,28 +56,22 @@ class Market(multiprocessing.Process):
         price_thread.join()
         external_process.join()
 
-    def __del__(self):
-        self.energy_queue.remove()
-        print('queue cleaned')
 
-
-def gettingEnergy(queue_semaphore):
+def gettingEnergy(queue_semaphore, queue):
     print ('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
     global fichier
-    energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
-
     while True:
-        (value,_) = energy_queue.receive()
+        value = queue.get()
         print('market got request')
         queue_semaphore.release()
-        with fichier :
-            fichier.write('energy receive '+value.decode()+"\n")
+        # with fichier :
+        print('energy receive '+value+"\n")
         print('request filled')
-        print ('energy receive '+value.decode())
-        value = float(value.decode())
+        print ('energy receive '+value)
+        value = float(value)
         with energy_mutex:
 
             if 0 > value:
@@ -121,8 +117,8 @@ def CalculatingPrice():
             prix_actuel = Y * prix_prec + energy_sell/S + energy_bought/B + external_value1 + external_value2
             energy_sell = 0
             energy_bought = 0
-        with fichier :
-            fichier.write('Market Price :', prix_actuel+"\n")
+        #with fichier :
+        print('Market Price :', str(prix_actuel)+"\n")
         sleep(TIME)
 
 
@@ -133,23 +129,23 @@ def handler(sig, frame):
 
     if sig == signal.SIGUSR1:
         if (not external1):
-            with fichier:
-                fichier.write('wow ! Exceptional crisis 1')
+            # with fichier:
+            print('wow ! Exceptional crisis 1')
             external1 = True
         else:
-            with fichier:
-                fichier.write('End of the Exceptional crisis 1')
+            # with fichier:
+            print('End of the Exceptional crisis 1')
             external1 = False
 
     if sig == signal.SIGUSR2:
         if (not external2):
-            with fichier:
-                fichier.write('wow ! Exceptional crisis 2')
+            # with fichier:
+            print('wow ! Exceptional crisis 2')
             with external_mutex:
                 external2 = True
         else:
-            with fichier:
-                fichier.write('End of the Exceptional crisis 2')
+            # with fichier:
+            print('End of the Exceptional crisis 2')
             with external_mutex:
                 external2 = False
 
@@ -159,9 +155,9 @@ if __name__ == '__main__':
     p.start()
     print ('l.134')
     try:
-        energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
+        energy_queue = sysv_ipc.MessageQueue(4, flags=sysv_ipc.IPC_CREAT)
     except sysv_ipc.ExistentialError:
-        energy_queue = sysv_ipc.MessageQueue(1)
+        energy_queue = sysv_ipc.MessageQueue(4)
     sleep(15)
     queue_semaphore.acquire()
     energy_queue.send("350".encode())

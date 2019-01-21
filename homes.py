@@ -31,7 +31,7 @@ class DispoEnergy:
         self.sender = int(s[2])
 
 
-def homes(weather, sem):
+def homes(weather, queue, sem):
     N = 10  # NOMBRE DE MAISONS
     lock = Lock()
     energy = Value('f')
@@ -40,8 +40,8 @@ def homes(weather, sem):
     for i in range(N):
         c = random.randrange(100, 500)
         p = random.randrange(50, 450)
-        pol = TRYGIVE
-        hom.append(Process(target=home, args=(lock, energy, weather, sem, c, p, 2, pol)))
+        pol = GIVE
+        hom.append(Process(target=home, args=(lock, energy, weather, sem, queue, c, p, 2, pol)))
     hom.append(Process(target=show, args=(5, energy)))
     for p in hom:
         p.start()
@@ -61,7 +61,7 @@ def show(ttl, nrj):
 
 
 # begin with capitalism
-def home(lock, energy, weather, sem, c_initial=200, p_initial=100, time=60, politic=SELL):
+def home(lock, energy, weather, sem, queue, c_initial=200, p_initial=100, time=60, politic=SELL):
     energy_propre = 0
     while True:
         try:
@@ -71,23 +71,22 @@ def home(lock, energy, weather, sem, c_initial=200, p_initial=100, time=60, poli
             print('energy home', getpid(), energy_propre, 'meteo', weather[0])
             with lock:
                 energy.value += energy_propre
-            energy_propre = request(politic, energy_propre, sem)
+            energy_propre = request(politic, energy_propre, sem, queue)
         except KeyboardInterrupt:
             break
     print("end of home", getpid())
 
 
-def request(politic, nrj, sem):
+def request(politic, nrj, sem, queue):
     if nrj > 0:  # selling nrj
         if politic == 1:
-            print(getpid(), 'nrj, give')
             # Proposer NRJ dans queue 2, t fini mais pas bloquant, si t infini : on suppose qu'on stocke
             try:
                 send = sysv_ipc.MessageQueue(2, flags=sysv_ipc.IPC_CREAT)
             except sysv_ipc.ExistentialError:
                 send = sysv_ipc.MessageQueue(2)
             send.send(DispoEnergy(nrj, ptime.time() + TIMEOUT, getpid()).serialize())
-            print('shares', nrj, 'for (s)', TIMEOUT)
+            print(getpid(), 'shares', nrj, 'for (s)', TIMEOUT)
         if politic == 2:
             # Proposer NRJ dans queue 2, t fini mais bloquant, on attends une réponse dans la queue 3. si pas de réponse, sell
             try:
@@ -119,10 +118,10 @@ def request(politic, nrj, sem):
                     send.send(r.serialize())
                 else:
                     break
-            to_market(getpid(), nrj, sem)
+            to_market(getpid(), nrj, sem, queue)
         if politic == 0:
             # requeste au marché : queue 1
-            to_market(getpid(), nrj, sem)
+            to_market(getpid(), nrj, sem, queue)
 
     if nrj < 0:  # buying
         nrj = abs(nrj)
@@ -151,13 +150,14 @@ def request(politic, nrj, sem):
             except sysv_ipc.BusyError:
                 print('no vendors')
                 break
-        to_market(getpid(), - nrj, sem)
+        to_market(getpid(), - nrj, sem, queue)
 
     return 0
 
 
-def to_market(pid, nrj, sem):
+def to_market(pid, nrj, sem, queue):
     sem.acquire()
+    print(getpid(), 'aquired sem')
     if nrj == 0:
         return
     # NRJ to send/request to the market
@@ -165,9 +165,10 @@ def to_market(pid, nrj, sem):
         neg = 'buying'
     else:
         neg = 'selling'
+
+    nrj = str(round(nrj, 2))
     print(pid, "resquest to market", nrj, neg)
-    mkt = sysv_ipc.MessageQueue(1)
-    mkt.send(str(nrj).encode)
+    queue.put(nrj)
 
 
 if __name__ == '__main__':
