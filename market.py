@@ -118,6 +118,8 @@ def CalculatingPrice():
         for i in range(len(pricehistory)-1):
             pricehistory[i] = pricehistory[i+1]
         pricehistory[9] = prix_actuel
+        with open('prices.txt', 'w') as wfile:
+            wfile.write(str(prix_actuel)+'\n')
         sleep(TIME)
 
 
