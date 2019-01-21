@@ -5,6 +5,7 @@ import threading
 import signal
 import sysv_ipc
 import external
+import matplotlib.pyplot as plt
 
 Y = 0.99  # long term attenuation coef
 S = 1000  # 1 over the coef of the impact of the homes selling energy to the market
@@ -95,7 +96,7 @@ def CalculatingPrice():
     global energy_mutex
 
     global fichier
-
+    pricehistory = [0,0,0,0,0,0,0,0,0,0]
     while True:
         if external1:
             external_value1 += EXT_CTE1
@@ -114,7 +115,16 @@ def CalculatingPrice():
             energy_bought = 0
         # with fichier :
         print('Market Price :', str(prix_actuel) + "\n")
+        for i in range(len(pricehistory)-1):
+            pricehistory[i] = pricehistory[i+1]
+        pricehistory[9] = prix_actuel
+        plot(pricehistory)
         sleep(TIME)
+
+
+def plot(prices):
+    plt.plot(prices)
+    plt.show()
 
 
 def handler(sig, frame):

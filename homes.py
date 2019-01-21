@@ -156,7 +156,6 @@ def request(politic, nrj, queue):
 
 
 def to_market(pid, nrj, queue):
-    print(getpid(), 'aquired sem')
     if nrj == 0:
         return
     # NRJ to send/request to the market
