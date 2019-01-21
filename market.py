@@ -35,18 +35,12 @@ class Market(multiprocessing.Process):
         global TIME
         TIME = time
         self.queue_semaphore = semaphore
-        try:
-            self.energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
-        except sysv_ipc.ExistentialError:
-            self.energy_queue = sysv_ipc.MessageQueue(1)
-
-
 
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
         external_process = external.External(1, getpid())
-        energy_thread = threading.Thread(target=gettingEnergy, args=(self.energy_queue, self.queue_semaphore,));
+        energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue_semaphore,));
         price_thread = threading.Thread(target=CalculatingPrice)
 
         energy_thread.start()
@@ -62,15 +56,18 @@ class Market(multiprocessing.Process):
         print('queue cleaned')
 
 
-def gettingEnergy(energy_queue, queue_semaphore):
+def gettingEnergy(queue_semaphore):
     print ('Geting energy')
     global energy_mutex
     global energy_bought
     global energy_sell
+    energy_queue = sysv_ipc.MessageQueue(1, flags=sysv_ipc.IPC_CREAT)
 
     while True:
         (value,_) = energy_queue.receive()
+        print('market got request')
         queue_semaphore.release()
+        print('request filled')
         print ('energy receive '+value.decode())
         value = float(value.decode())
         with energy_mutex:
