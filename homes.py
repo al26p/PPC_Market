@@ -55,6 +55,7 @@ def homes(weather, queue, amount=10, pol=GIVE):
 
 # begin with capitalism
 def home(weather, queue, c_initial=200, p_initial=100, time=60, politic=SELL):
+    print('\t\t', getpid(), 'politic', politic)
     energy_propre = 0
     while True:
         try:
