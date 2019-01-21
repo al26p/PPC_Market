@@ -115,9 +115,6 @@ def CalculatingPrice():
             energy_bought = 0
         # with fichier :
         print('Market Price :', str(prix_actuel) + "\n")
-        for i in range(len(pricehistory)-1):
-            pricehistory[i] = pricehistory[i+1]
-        pricehistory[9] = prix_actuel
         with open('prices.txt', 'a') as wfile:
             wfile.write(str(prix_actuel)+'\n')
         sleep(TIME)
