@@ -38,7 +38,7 @@ def homes(weather, queue, amount=10, pol=GIVE):
         c = random.randrange(100, 500)
         p = random.randrange(50, 300)
         if pol == 4:
-            pols = random.randrange(0,2,1)
+            pols = random.randrange(0,3,1)
         else:
             pols = pol
         hom.append(Process(target=home, args=( weather, queue, c, p, 2, pols)))
