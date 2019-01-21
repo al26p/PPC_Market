@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 SELL = 0
 GIVE = 1
 TRYGIVE = 2
+CVOUKIVOI = 4
 
 
 def graph():
@@ -35,7 +36,7 @@ if __name__ == '__main__':
         w = weather.Weather(a, 1)
         q = Queue(maxRequests)
         n = 12
-        pol = GIVE
+        pol = CVOUKIVOI
         h = Process(target=homes.homes, args=(a, q, n, pol))
         m = market.Market(q, 2)
 
