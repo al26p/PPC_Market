@@ -50,23 +50,23 @@ def homes(weather, queue, running, amount=10, pol=GIVE):
     ptime.sleep(2)
     sysv_ipc.MessageQueue(2).remove()
     sysv_ipc.MessageQueue(3).remove()
-    print('See ya !')
+    print('End of homes - See ya !')
 
 
 # begin with capitalism
 def home(weather, queue, running, c_initial=200, p_initial=100, time=60, politic=SELL):
     print('\t\t', getpid(), 'politic', politic)
     energy_propre = 0
-    while running:
+    while running.value:
         ptime.sleep(time)
         energy_propre += - time * (c_initial + 1 / weather[0] * COEF_TEMP)  # conso
         energy_propre += time * (p_initial + weather[2] * COEF_WIND + weather[1] * COEF_SUN)  # prod
         print('\t\t energy home', getpid(), energy_propre, 'meteo', weather[0])
-        energy_propre = request(politic, energy_propre, queue)
+        energy_propre = request(politic, energy_propre, queue, running)
     print("end of home", getpid())
 
 
-def request(politic, nrj, queue):
+def request(politic, nrj, queue, running):
     if nrj > 0:  # selling nrj
         if politic == 1:
             # Proposer NRJ dans queue 2, t fini mais pas bloquant, si t infini : on suppose qu'on stocke
@@ -107,10 +107,10 @@ def request(politic, nrj, queue):
                     send.send(r.serialize())
                 else:
                     break
-            to_market(getpid(), nrj, queue)
+            to_market(getpid(), nrj, queue, running)
         if politic == 0:
             # requeste au marché : queue 1
-            to_market(getpid(), nrj, queue)
+            to_market(getpid(), nrj, queue, running)
 
     if nrj < 0:  # buying
         nrj = abs(nrj)
@@ -139,12 +139,12 @@ def request(politic, nrj, queue):
             except sysv_ipc.BusyError:
                 print('\t\t', getpid(),'no vendors')
                 break
-        to_market(getpid(), - nrj, queue)
+        to_market(getpid(), - nrj, queue, running)
 
     return 0
 
 
-def to_market(pid, nrj, queue):
+def to_market(pid, nrj, queue, running):
     if nrj == 0:
         return
     # NRJ to send/request to the market
@@ -155,7 +155,9 @@ def to_market(pid, nrj, queue):
 
     nrj = str(round(nrj, 2))
     print('\t\t', pid, "resquest to market", nrj, neg)
-    queue.put(nrj)
+
+    if running.value:
+        queue.put(nrj)
 
 
 if __name__ == '__main__':

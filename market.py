@@ -31,7 +31,7 @@ external_mutex = threading.Lock()  # to protect the variable upside this line
 
 
 class Market(multiprocessing.Process):
-    def __init__(self, queue, time=5, running):
+    def __init__(self, queue, running, time=5):
         super().__init__()
         global TIME
         TIME = time
@@ -52,6 +52,7 @@ class Market(multiprocessing.Process):
         energy_thread.join()
         price_thread.join()
         external_process.join()
+        print('end of market')
 
 def gettingEnergy(queue, running):
     print('Geting energy')
@@ -59,7 +60,7 @@ def gettingEnergy(queue, running):
     global energy_bought
     global energy_sell
     global fichier
-    while running:
+    while running.value:
         value = queue.get()
         print('\t energy receive ' + value + "\n")
         value = float(value)
@@ -93,7 +94,7 @@ def CalculatingPrice(running):
     global fichier
     with open('prices.json', 'w') as wfile:
         wfile.write('{\"prices\":[')
-    while running:
+    while running.value:
         if external1:
             external_value1 += EXT_CTE1
         else:
