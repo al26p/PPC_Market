@@ -8,8 +8,11 @@ import signal
 
 
 class External(Process):
+    # proba for launching the crisis
     PROBA1 = 0.04
     PROBA2 = 0.01
+
+    #proba for stopping the ongoing crisis
     CR_PROBA1 = 0.2
     CR_PROBA2 = 0.1
 
