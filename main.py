@@ -1,4 +1,4 @@
-from multiprocessing import Process, Array, Semaphore, Queue
+from multiprocessing import Process, Array, Semaphore, Queue, Value
 # import market
 import weather
 import homes
@@ -37,7 +37,8 @@ if __name__ == '__main__':
         q = Queue(maxRequests)
         n = 12
         pol = CVOUKIVOI
-        h = Process(target=homes.homes, args=(a, q, n, pol))
+        running = Value('i', 1)
+        h = Process(target=homes.homes, args=(a, q, running, n, pol))
         m = market.Market(q, 2)
 
         m.start()

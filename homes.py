@@ -31,7 +31,7 @@ class DispoEnergy:
         self.sender = int(s[2])
 
 
-def homes(weather, queue, amount=10, pol=GIVE):
+def homes(weather, queue, running, amount=10, pol=GIVE):
     N = amount  # NOMBRE DE MAISONS
     hom = list()
     for i in range(N):
@@ -41,31 +41,28 @@ def homes(weather, queue, amount=10, pol=GIVE):
             pols = random.randrange(0,3,1)
         else:
             pols = pol
-        hom.append(Process(target=home, args=( weather, queue, c, p, 2, pols)))
+        hom.append(Process(target=home, args=( weather, queue, running, c, p, 2, pols)))
     for p in hom:
         p.start()
     print('Homes started')
     for p in hom:
         p.join()
-    ptime.sleep(1)
+    ptime.sleep(2)
     sysv_ipc.MessageQueue(2).remove()
     sysv_ipc.MessageQueue(3).remove()
     print('See ya !')
 
 
 # begin with capitalism
-def home(weather, queue, c_initial=200, p_initial=100, time=60, politic=SELL):
+def home(weather, queue, running, c_initial=200, p_initial=100, time=60, politic=SELL):
     print('\t\t', getpid(), 'politic', politic)
     energy_propre = 0
-    while True:
-        try:
-            ptime.sleep(time)
-            energy_propre += - time * (c_initial + 1 / weather[0] * COEF_TEMP)  # conso
-            energy_propre += time * (p_initial + weather[2] * COEF_WIND + weather[1] * COEF_SUN)  # prod
-            print('\t\t energy home', getpid(), energy_propre, 'meteo', weather[0])
-            energy_propre = request(politic, energy_propre, queue)
-        except KeyboardInterrupt:
-            break
+    while running:
+        ptime.sleep(time)
+        energy_propre += - time * (c_initial + 1 / weather[0] * COEF_TEMP)  # conso
+        energy_propre += time * (p_initial + weather[2] * COEF_WIND + weather[1] * COEF_SUN)  # prod
+        print('\t\t energy home', getpid(), energy_propre, 'meteo', weather[0])
+        energy_propre = request(politic, energy_propre, queue)
     print("end of home", getpid())
 
 
