@@ -16,16 +16,17 @@ class External(Process):
     CR_PROBA1 = 0.2
     CR_PROBA2 = 0.1
 
-    def __init__(self, time, marketPid):
+    def __init__(self, time, marketPid, running):
         super().__init__()
         self.time = time
         self.marketPid = marketPid
         self.p1 = self.PROBA1
         self.p2 = self.PROBA2
+        self.running = running
         random.seed()
 
     def run(self):
-        while True:
+        while self.running:
             try:
                 sleep(self.time)
                 i = random.random()

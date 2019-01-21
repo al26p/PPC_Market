@@ -41,7 +41,7 @@ class Market(multiprocessing.Process):
     def run(self):
         signal.signal(signal.SIGUSR1, handler)
         signal.signal(signal.SIGUSR2, handler)
-        external_process = external.External(1, getpid())
+        external_process = external.External(1, getpid(), self.running)
         energy_thread = threading.Thread(target=gettingEnergy, args=(self.queue,self.running,))
         price_thread = threading.Thread(target=CalculatingPrice, args=(self.running,))
 
