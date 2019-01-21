@@ -37,7 +37,11 @@ def homes(weather, queue, amount=10, pol=GIVE):
     for i in range(N):
         c = random.randrange(100, 500)
         p = random.randrange(50, 300)
-        hom.append(Process(target=home, args=( weather, queue, c, p, 2, pol)))
+        if pol == 4:
+            pols = random.randrange(0,2,1)
+        else:
+            pols = pol
+        hom.append(Process(target=home, args=( weather, queue, c, p, 2, pols)))
     for p in hom:
         p.start()
     print('Homes started')

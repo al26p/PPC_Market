@@ -34,7 +34,7 @@ if __name__ == '__main__':
         a = Array('f', range(3))
         w = weather.Weather(a, 1)
         q = Queue(maxRequests)
-        n = 10
+        n = 12
         pol = GIVE
         h = Process(target=homes.homes, args=(a, q, n, pol))
         m = market.Market(q, 2)
