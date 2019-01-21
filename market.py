@@ -95,7 +95,8 @@ def CalculatingPrice():
     global energy_mutex
 
     global fichier
-    pricehistory = [0,0,0,0,0,0,0,0,0,0]
+    with open('prices.txt', 'w') as wfile:
+        wfile.write('simulation'+'\n')
     while True:
         if external1:
             external_value1 += EXT_CTE1
@@ -117,7 +118,7 @@ def CalculatingPrice():
         for i in range(len(pricehistory)-1):
             pricehistory[i] = pricehistory[i+1]
         pricehistory[9] = prix_actuel
-        with open('prices.txt', 'w') as wfile:
+        with open('prices.txt', 'a') as wfile:
             wfile.write(str(prix_actuel)+'\n')
         sleep(TIME)
 
