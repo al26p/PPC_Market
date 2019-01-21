@@ -115,6 +115,8 @@ def CalculatingPrice():
                 prix_actuel = Y * prix_prec + energy_sell / S + energy_bought / B + external_value1 + external_value2
                 energy_sell = 0
                 energy_bought = 0
+                if prix_actuel < 0:
+                    prix_actuel = 0
             print('Market Price :', str(prix_actuel) + "\n")
             with open('prices.json', 'a') as wfile:
                 wfile.write(str(prix_actuel)+',')
